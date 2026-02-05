@@ -7,442 +7,439 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { 
-            --tg-theme-bg-color: #fff; 
-            --tg-theme-text-color: #000; 
-            --tg-theme-button-color: #2481cc; 
-            --tg-theme-button-text-color: #fff; 
-            --tg-theme-secondary-bg-color: #efeff3; 
-            --tg-theme-hint-color: #999; 
+            --bg-color: #fff; 
+            --text-color: #000; 
+            --btn-color: #3390ec; 
+            --btn-text: #fff; 
+            --gray-bg: #f4f4f5; 
         }
         body { 
-            background-color: var(--tg-theme-secondary-bg-color); 
-            color: var(--tg-theme-text-color); 
-            font-family: -apple-system, sans-serif; 
+            background-color: var(--gray-bg); 
+            color: var(--text-color); 
+            font-family: Helvetica, Arial, sans-serif; 
             margin: 0; 
             padding: 0; 
-            padding-bottom: 70px; /* Отступ для нижнего меню */
+            padding-bottom: 80px; /* Место для меню */
+            -webkit-tap-highlight-color: transparent;
         }
-        .container { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 
-        /* Вкладки (Экраны) */
-        .tab-content { display: none; }
-        .tab-content.active { display: flex; flex-direction: column; gap: 12px; }
+        /* --- ВЕРХНЯЯ ПАНЕЛЬ --- */
+        .top-bar { padding: 10px 15px; display: flex; justify-content: flex-end; }
+        .lang-select { background: transparent; border: none; font-size: 14px; }
 
-        /* Карточки */
-        .card { background-color: var(--tg-theme-bg-color); border-radius: 14px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        /* --- КАРТОЧКИ --- */
+        .card { 
+            background: var(--bg-color); 
+            margin: 10px 15px; 
+            padding: 15px; 
+            border-radius: 12px; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
+        }
 
-        /* Прогресс бар */
-        .stats-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; }
-        .progress-container { width: 100%; background-color: var(--tg-theme-secondary-bg-color); border-radius: 6px; height: 8px; overflow: hidden; }
-        .progress-bar { height: 100%; background-color: var(--tg-theme-button-color); width: 0%; transition: width 0.4s ease-out; }
+        /* --- ПРОГРЕСС БАР --- */
+        .stats-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 14px; }
+        .progress-track { width: 100%; background: #e0e0e0; height: 10px; border-radius: 5px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--btn-color); width: 0%; transition: width 0.3s; }
 
-        /* Ввод еды */
-        textarea { width: 100%; min-height: 60px; padding: 12px; border: 1px solid transparent; background-color: var(--tg-theme-secondary-bg-color); color: var(--tg-theme-text-color); border-radius: 10px; resize: none; outline: none; box-sizing: border-box; }
-        .actions-row { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-photo { flex: 0 0 50px; height: 50px; display: flex; align-items: center; justify-content: center; background-color: var(--tg-theme-secondary-bg-color); border-radius: 10px; cursor: pointer; font-size: 24px; }
-        #fileInput { display: none; }
-        .btn-send { flex: 1; background-color: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; }
-        #previewContainer { display: none; margin-bottom: 10px; }
-        #previewImage { width: 100%; border-radius: 10px; max-height: 200px; object-fit: cover; }
+        /* --- ВВОД ЕДЫ --- */
+        textarea { 
+            width: 100%; height: 60px; padding: 10px; 
+            border: 1px solid #ddd; border-radius: 8px; 
+            box-sizing: border-box; resize: none; font-size: 16px;
+        }
+        .btn-row { display: flex; gap: 10px; margin-top: 10px; }
+        .btn { 
+            border: none; padding: 12px; border-radius: 8px; 
+            font-size: 16px; font-weight: bold; cursor: pointer; flex: 1;
+            background: var(--btn-color); color: var(--btn-text);
+        }
+        .btn-icon { flex: 0 0 50px; background: #fff; border: 1px solid #ddd; color: #000; font-size: 20px; display: flex; align-items: center; justify-content: center;}
 
-        /* История */
-        .food-list { list-style: none; padding: 0; margin: 0; }
-        .food-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--tg-theme-secondary-bg-color); }
-        .food-calories { font-weight: 600; background: var(--tg-theme-secondary-bg-color); padding: 4px 8px; border-radius: 6px; font-size: 13px; }
-        .date-header { margin-top: 15px; margin-bottom: 5px; font-size: 13px; color: var(--tg-theme-hint-color); font-weight: bold; text-transform: uppercase; }
+        /* --- ИСТОРИЯ --- */
+        .history-list { list-style: none; padding: 0; margin: 0; }
+        .history-item { 
+            display: flex; justify-content: space-between; 
+            padding: 10px 0; border-bottom: 1px solid #eee; 
+        }
+        .history-date { font-size: 12px; color: #888; font-weight: bold; margin-top: 15px; text-transform: uppercase; }
 
-        /* ПРОФИЛЬ */
-        .profile-row { display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center; }
-        .profile-input { width: 80px; padding: 8px; border-radius: 8px; border: 1px solid #ccc; text-align: center; }
-        .profile-select { padding: 8px; border-radius: 8px; border: 1px solid #ccc; flex: 1; margin-left: 10px; }
-        .vip-badge { background: gold; color: black; padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; display: none; }
-        .btn-vip { background-color: #ffcc00; color: #000; width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; }
+        /* --- НИЖНЕЕ МЕНЮ --- */
+        .bottom-menu { 
+            position: fixed; bottom: 0; left: 0; width: 100%; 
+            background: #fff; display: flex; border-top: 1px solid #ddd; 
+            padding: 10px 0; z-index: 999;
+        }
+        .menu-btn { flex: 1; text-align: center; color: #999; cursor: pointer; }
+        .menu-btn.active { color: var(--btn-color); }
+        .menu-icon { font-size: 24px; display: block; margin-bottom: 2px; }
+        .menu-text { font-size: 12px; }
 
-        /* Нижнее меню */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--tg-theme-bg-color); border-top: 1px solid var(--tg-theme-secondary-bg-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
-        .nav-item { color: var(--tg-theme-hint-color); font-size: 12px; text-align: center; cursor: pointer; }
-        .nav-item.active { color: var(--tg-theme-button-color); font-weight: bold; }
-        .nav-icon { font-size: 20px; display: block; margin-bottom: 2px; }
+        /* --- ЭКРАНЫ (ВКЛАДКИ) --- */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* --- ПРОФИЛЬ --- */
+        .input-group { margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .input-group label { font-size: 15px; }
+        .input-group input, .input-group select { 
+            width: 100px; padding: 8px; border-radius: 6px; 
+            border: 1px solid #ccc; text-align: center; font-size: 16px;
+        }
+        .input-group select { width: 120px; text-align: left; }
+
+        /* VIP */
+        .vip-block { display: none; margin-top: 10px; } /* Скрыто по умолчанию */
+        .vip-active-badge { 
+            display: none; /* Скрыто, пока не купит */
+            background: gold; color: #000; padding: 4px 10px; 
+            border-radius: 15px; font-size: 12px; font-weight: bold; 
+            margin-left: 10px; 
+        }
+        .btn-gold { background: gold; color: #000; width: 100%; }
 
     </style>
 </head>
 <body>
 
-    <!-- Вкладка 1: ГЛАВНАЯ -->
-    <div id="tab-home" class="container tab-content active">
-        <!-- Язык -->
-        <div style="display:flex; justify-content: flex-end;">
-            <select id="langSelect" onchange="changeLanguage()" style="border:none; bg:transparent;">
-                <option value="ru">🇷🇺 Русский</option>
-                <option value="uz">🇺🇿 O'zbekcha</option>
-                <option value="en">🇺🇸 English</option>
-            </select>
-        </div>
+    <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+    <div class="top-bar">
+        <select class="lang-select" id="langSelect" onchange="changeLang()">
+            <option value="ru">🇷🇺 RU</option>
+            <option value="uz">🇺🇿 UZ</option>
+            <option value="en">🇺🇸 EN</option>
+        </select>
+    </div>
 
-        <!-- Статистика -->
+    <!-- === ЭКРАН 1: ГЛАВНАЯ === -->
+    <div id="screen-home" class="screen active">
+        
+        <!-- Прогресс -->
         <div class="card">
-            <div class="stats-header">
+            <div class="stats-row">
                 <span id="txtToday">Сегодня</span>
-                <span><span id="currentCals">0</span> / <span id="targetCals">2000</span></span>
+                <span><span id="valCurrent">0</span> / <span id="valGoal">2000</span></span>
             </div>
-            <div class="progress-container">
-                <div class="progress-bar" id="progressBar"></div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressBar"></div>
             </div>
         </div>
 
-        <!-- Ввод -->
+        <!-- Добавление -->
         <div class="card">
-            <div id="previewContainer"><img id="previewImage" src=""></div>
-            <textarea id="foodInput" placeholder="Что съели?"></textarea>
-            <div class="actions-row">
-                <label class="btn-photo">📷<input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)"></label>
-                <button class="btn-send" id="analyzeBtn" onclick="processFood()">Добавить</button>
+            <div id="previewBox" style="display:none; margin-bottom:10px;">
+                <img id="previewImg" style="width:100%; border-radius:8px;">
+            </div>
+            <textarea id="foodInput" placeholder="Что съели? (Плов, 200г)"></textarea>
+            <div class="btn-row">
+                <label class="btn btn-icon">
+                    📷 <input type="file" id="fileInput" accept="image/*" hidden onchange="handleFile(this)">
+                </label>
+                <button class="btn" id="btnAnalyze" onclick="analyzeFood()">Добавить</button>
             </div>
         </div>
 
         <!-- История -->
         <div class="card">
-            <div class="stats-header" id="txtHistory">История</div>
-            <ul class="food-list" id="foodList">
-                <li style="text-align:center; color:grey; padding:10px" id="txtEmpty">Загрузка...</li>
-            </ul>
+            <div class="stats-row" id="txtHistory">История</div>
+            <div id="historyList">
+                <div style="text-align:center; color:#999; padding:20px;">Загрузка...</div>
+            </div>
         </div>
     </div>
 
-    <!-- Вкладка 2: ПРОФИЛЬ -->
-    <div id="tab-profile" class="container tab-content">
+    <!-- === ЭКРАН 2: ПРОФИЛЬ === -->
+    <div id="screen-profile" class="screen">
         <div class="card">
-            <div class="stats-header">
-                <span id="txtProfileTitle">Мои данные</span>
-                <span id="vipBadge" class="vip-badge">👑 VIP</span>
+            <div class="stats-row">
+                <span>Профиль <span id="vipBadge" class="vip-active-badge">👑 VIP</span></span>
             </div>
 
-            <div class="profile-row">
-                <span id="lblWeight">Вес (кг)</span>
-                <input type="number" id="inpWeight" class="profile-input" placeholder="70" onchange="calculateGoal()">
+            <div class="input-group">
+                <label>Вес (кг)</label>
+                <input type="number" id="inpWeight" value="70" oninput="calcGoal()">
             </div>
-            <div class="profile-row">
-                <span id="lblHeight">Рост (см)</span>
-                <input type="number" id="inpHeight" class="profile-input" placeholder="175" onchange="calculateGoal()">
+            <div class="input-group">
+                <label>Рост (см)</label>
+                <input type="number" id="inpHeight" value="175" oninput="calcGoal()">
             </div>
-            <div class="profile-row">
-                <span id="lblAge">Возраст</span>
-                <input type="number" id="inpAge" class="profile-input" placeholder="25" onchange="calculateGoal()">
+            <div class="input-group">
+                <label>Возраст</label>
+                <input type="number" id="inpAge" value="25" oninput="calcGoal()">
             </div>
-            <div class="profile-row">
-                <span id="lblGender">Пол</span>
-                <select id="selGender" class="profile-select" onchange="calculateGoal()">
+            <div class="input-group">
+                <label>Пол</label>
+                <select id="inpGender" onchange="calcGoal()">
                     <option value="male">Мужской</option>
                     <option value="female">Женский</option>
                 </select>
             </div>
-            <div class="profile-row">
-                <span id="lblGoal">Цель</span>
-                <select id="selGoal" class="profile-select" onchange="calculateGoal()">
-                    <option value="lose">Похудение</option>
-                    <option value="maintain">Поддержание</option>
-                    <option value="gain">Набор веса</option>
+            <div class="input-group">
+                <label>Цель</label>
+                <select id="inpGoal" onchange="calcGoal()">
+                    <option value="lose">Похудеть</option>
+                    <option value="maintain">Держать</option>
+                    <option value="gain">Набрать</option>
                 </select>
             </div>
-            
-            <hr>
-            <div style="text-align:center; margin:10px 0;">
-                <span id="lblResult">Ваша норма:</span> 
-                <strong style="font-size:18px;" id="calcResult">2000</strong> kcal
+
+            <div style="text-align:center; margin-top:20px; font-size:18px;">
+                Норма: <b id="lblCalcGoal">2000</b> ккал
             </div>
         </div>
 
-        <!-- Покупка VIP -->
-        <div class="card" id="vipCard">
-            <h3 style="margin-top:0;">🌟 Premium</h3>
-            <p style="font-size:14px; color:grey;" id="txtVipDesc">Безлимитный анализ фото и расширенная статистика.</p>
-            <button class="btn-vip" onclick="buyVip()">Купить VIP (50 ⭐️)</button>
+        <!-- Блок покупки VIP -->
+        <div class="card vip-block" id="vipPromo">
+            <h3>🌟 VIP Статус</h3>
+            <p style="color:#666; font-size:14px;">Безлимитные запросы и точный расчет.</p>
+            <button class="btn btn-gold" onclick="buyVip()">Купить за 50 ⭐️</button>
         </div>
     </div>
 
-    <!-- Нижнее Меню -->
-    <div class="bottom-nav">
-        <div class="nav-item active" onclick="switchTab('home')" id="navHome">
-            <span class="nav-icon">🏠</span> <span id="lblMenuHome">Главная</span>
+    <!-- НИЖНЕЕ МЕНЮ -->
+    <div class="bottom-menu">
+        <div class="menu-btn active" id="tabHome" onclick="openScreen('home')">
+            <span class="menu-icon">🏠</span>
+            <span class="menu-text">Главная</span>
         </div>
-        <div class="nav-item" onclick="switchTab('profile')" id="navProfile">
-            <span class="nav-icon">👤</span> <span id="lblMenuProfile">Профиль</span>
+        <div class="menu-btn" id="tabProfile" onclick="openScreen('profile')">
+            <span class="menu-icon">👤</span>
+            <span class="menu-text">Профиль</span>
         </div>
     </div>
 
     <script>
+        // ==========================================
+        // 👇 ВСТАВЬ СВОЙ URL СЮДА (ngrok или сервер)
+        const BASE_URL = "https://deja-embryoid-rosendo.ngrok-free.dev"; 
+        // ==========================================
+
         const tg = window.Telegram.WebApp;
         tg.expand();
+        // Берем ID пользователя (если открыли не в ТГ, будет 11111)
+        const USER_ID = tg.initDataUnsafe?.user?.id || 11111;
 
-        // 👇 ВСТАВЬ СЮДА СВОЙ URL NGROK
-        const BASE_URL = "https://deja-embryoid-rosendo.ngrok-free.dev"; 
-        
-        const USER_ID = tg.initDataUnsafe?.user?.id || 0;
-
-        // Язык
-        let currentLang = localStorage.getItem('app_lang') || 'ru';
-        document.getElementById('langSelect').value = currentLang;
-
-        // Данные пользователя (сохраняем в LocalStorage браузера)
-        let userProfile = JSON.parse(localStorage.getItem('user_profile')) || {
-            weight: 70, height: 170, age: 25, gender: 'male', goal: 'maintain'
-        };
-
-        // Тексты
-        const TRANSLATIONS = {
-            'ru': { 
-                today: 'Сегодня', history: 'История', add: 'Добавить', think: 'Думаю...', input: 'Что съели?', empty: 'Пока пусто', error: 'Не понял',
-                profile: 'Профиль', home: 'Главная', weight: 'Вес (кг)', height: 'Рост (см)', age: 'Возраст', gender: 'Пол', goal: 'Цель',
-                norm: 'Ваша норма:', vip_desc: 'Купи VIP и получи безлимит!'
-            },
-            'uz': { 
-                today: 'Bugun', history: 'Tarix', add: "Qo'shish", think: 'O\\'ylayapman...', input: 'Nima yediz?', empty: 'Hozircha bo\\'sh', error: 'Tushunmadim',
-                profile: 'Profil', home: 'Asosiy', weight: 'Vazn (kg)', height: 'Bo\\'yi (sm)', age: 'Yosh', gender: 'Jins', goal: 'Maqsad',
-                norm: 'Norma:', vip_desc: 'VIP oling va cheklovsiz ishlating!'
-            },
-            'en': { 
-                today: 'Today', history: 'History', add: 'Add', think: 'Thinking...', input: 'What did you eat?', empty: 'Empty', error: 'Error',
-                profile: 'Profile', home: 'Home', weight: 'Weight', height: 'Height', age: 'Age', gender: 'Gender', goal: 'Goal',
-                norm: 'Your goal:', vip_desc: 'Get VIP for unlimited access!'
-            }
-        };
-
-        function updateUITexts() {
-            const t = TRANSLATIONS[currentLang];
-            document.getElementById('txtToday').innerText = t.today;
-            document.getElementById('txtHistory').innerText = t.history;
-            document.getElementById('analyzeBtn').innerText = t.add;
-            document.getElementById('foodInput').placeholder = t.input;
-            if(document.getElementById('txtEmpty')) document.getElementById('txtEmpty').innerText = t.empty;
-            
-            document.getElementById('lblMenuHome').innerText = t.home;
-            document.getElementById('lblMenuProfile').innerText = t.profile;
-            document.getElementById('txtProfileTitle').innerText = t.profile;
-            
-            document.getElementById('lblWeight').innerText = t.weight;
-            document.getElementById('lblHeight').innerText = t.height;
-            document.getElementById('lblAge').innerText = t.age;
-            document.getElementById('lblGender').innerText = t.gender;
-            document.getElementById('lblGoal').innerText = t.goal;
-            document.getElementById('lblResult').innerText = t.norm;
-            document.getElementById('txtVipDesc').innerText = t.vip_desc;
-        }
-
-        function changeLanguage() {
-            currentLang = document.getElementById('langSelect').value;
-            localStorage.setItem('app_lang', currentLang);
-            updateUITexts();
-        }
-
-        // --- ЛОГИКА ВКЛАДОК ---
-        function switchTab(tabName) {
-            // Скрываем все
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            
-            // Показываем нужную
-            document.getElementById('tab-' + tabName).classList.add('active');
-            if(tabName === 'home') document.getElementById('navHome').classList.add('active');
-            if(tabName === 'profile') document.getElementById('navProfile').classList.add('active');
-        }
-
-        // --- РАСЧЕТ КАЛОРИЙ (Миффлин-Сан Жеор) ---
-        function calculateGoal() {
-            // Считываем значения
-            const w = parseFloat(document.getElementById('inpWeight').value) || 70;
-            const h = parseFloat(document.getElementById('inpHeight').value) || 170;
-            const a = parseFloat(document.getElementById('inpAge').value) || 25;
-            const gender = document.getElementById('selGender').value;
-            const goal = document.getElementById('selGoal').value;
-
-            // Сохраняем
-            userProfile = { weight: w, height: h, age: a, gender: gender, goal: goal };
-            localStorage.setItem('user_profile', JSON.stringify(userProfile));
-
-            // Формула
-            let bmr; 
-            if (gender === 'male') {
-                bmr = (10 * w) + (6.25 * h) - (5 * a) + 5;
-            } else {
-                bmr = (10 * w) + (6.25 * h) - (5 * a) - 161;
-            }
-
-            // Активность (средняя 1.375)
-            let tdee = bmr * 1.375;
-
-            // Корректировка под цель
-            if (goal === 'lose') tdee -= 400; // Дефицит
-            if (goal === 'gain') tdee += 300; // Профицит
-
-            const finalGoal = Math.round(tdee);
-            
-            document.getElementById('calcResult').innerText = finalGoal;
-            document.getElementById('targetCals').innerText = finalGoal;
-            
-            return finalGoal;
-        }
-
-        // Заполняем поля при старте
-        function initProfile() {
-            document.getElementById('inpWeight').value = userProfile.weight;
-            document.getElementById('inpHeight').value = userProfile.height;
-            document.getElementById('inpAge').value = userProfile.age;
-            document.getElementById('selGender').value = userProfile.gender;
-            document.getElementById('selGoal').value = userProfile.goal;
-            calculateGoal();
-        }
-
-        // --- ЛОГИКА ЕДЫ (старая функция, слегка обновленная) ---
+        // Глобальные переменные
+        let dailyGoal = 2000;
         let todayCalories = 0;
         let selectedFile = null;
 
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                selectedFile = file;
-                const reader = new FileReader();
-                reader.onload = e => {
-                    document.getElementById('previewImage').src = e.target.result;
-                    document.getElementById('previewContainer').style.display = 'block';
-                }
-                reader.readAsDataURL(file);
-            }
+        // --- 1. ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ ---
+        function openScreen(name) {
+            // Убираем active у всех
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.menu-btn').forEach(el => el.classList.remove('active'));
+
+            // Добавляем active нужному
+            document.getElementById('screen-' + name).classList.add('active');
+            if(name === 'home') document.getElementById('tabHome').classList.add('active');
+            if(name === 'profile') document.getElementById('tabProfile').classList.add('active');
         }
 
+        // --- 2. ПРОФИЛЬ И РАСЧЕТ НОРМЫ ---
+        function loadProfile() {
+            // Пытаемся достать настройки из памяти телефона
+            const saved = JSON.parse(localStorage.getItem('user_settings'));
+            if (saved) {
+                document.getElementById('inpWeight').value = saved.weight;
+                document.getElementById('inpHeight').value = saved.height;
+                document.getElementById('inpAge').value = saved.age;
+                document.getElementById('inpGender').value = saved.gender;
+                document.getElementById('inpGoal').value = saved.goal;
+            }
+            calcGoal(); // Сразу считаем норму
+        }
+
+        function calcGoal() {
+            const w = parseFloat(document.getElementById('inpWeight').value) || 70;
+            const h = parseFloat(document.getElementById('inpHeight').value) || 170;
+            const a = parseFloat(document.getElementById('inpAge').value) || 25;
+            const gender = document.getElementById('inpGender').value;
+            const goal = document.getElementById('inpGoal').value;
+
+            // Формула Харриса-Бенедикта
+            let bmr = (gender === 'male') 
+                ? (10 * w) + (6.25 * h) - (5 * a) + 5
+                : (10 * w) + (6.25 * h) - (5 * a) - 161;
+
+            let result = Math.round(bmr * 1.375); // Средняя активность
+
+            if (goal === 'lose') result -= 400;
+            if (goal === 'gain') result += 300;
+
+            // Обновляем глобальную переменную
+            dailyGoal = result;
+
+            // Обновляем текст на экране
+            document.getElementById('valGoal').innerText = dailyGoal; // На главной
+            document.getElementById('lblCalcGoal').innerText = dailyGoal; // В профиле
+
+            // Сохраняем в память
+            localStorage.setItem('user_settings', JSON.stringify({weight:w, height:h, age:a, gender:gender, goal:goal}));
+
+            // Перерисовываем полоску
+            updateProgress();
+        }
+
+        // --- 3. ИСТОРИЯ И ПРОГРЕСС ---
         async function loadHistory() {
+            const list = document.getElementById('historyList');
             try {
                 const res = await fetch(`${BASE_URL}/get_history?user_id=${USER_ID}`, {
-                    headers: { "ngrok-skip-browser-warning": "true" }
-                });
-                const history = await res.json();
-                
-                const list = document.getElementById('foodList');
-                list.innerHTML = '';
-                todayCalories = 0;
-
-                if (history.length === 0) {
-                    list.innerHTML = `<li id="txtEmpty" style="text-align:center; color:grey; padding:10px">${TRANSLATIONS[currentLang].empty}</li>`;
-                } else {
-                    let lastDate = null;
-                    const todayStr = new Date().toISOString().split('T')[0];
-
-                    history.forEach(item => {
-                        if (item.date === todayStr) todayCalories += item.calories;
-                        if (item.date !== lastDate) {
-                            const dateHeader = document.createElement('div');
-                            dateHeader.className = 'date-header';
-                            dateHeader.innerText = (item.date === todayStr) ? TRANSLATIONS[currentLang].today : item.date;
-                            list.appendChild(dateHeader);
-                            lastDate = item.date;
-                        }
-                        const li = document.createElement('li');
-                        li.className = 'food-item';
-                        li.innerHTML = `<span class="food-name">${item.name}</span><span class="food-calories">${item.calories}</span>`;
-                        list.appendChild(li);
-                    });
-                }
-                updateStats();
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        function updateStats() {
-            const goal = parseInt(document.getElementById('targetCals').innerText) || 2000;
-            document.getElementById('currentCals').innerText = todayCalories;
-            let percent = (todayCalories / goal) * 100;
-            if (percent > 100) percent = 100;
-            document.getElementById('progressBar').style.width = percent + '%';
-        }
-
-        async function processFood() {
-            const textInput = document.getElementById('foodInput').value.trim();
-            const btn = document.getElementById('analyzeBtn');
-            const t = TRANSLATIONS[currentLang];
-
-            if (!textInput && !selectedFile) return;
-
-            btn.disabled = true;
-            btn.innerText = t.think;
-
-            const formData = new FormData();
-            formData.append('text', textInput);
-            formData.append('user_id', USER_ID);
-            formData.append('language', currentLang);
-            if (selectedFile) formData.append('photo', selectedFile);
-
-            try {
-                const response = await fetch(`${BASE_URL}/analyze`, {
-                    method: 'POST',
-                    headers: { "ngrok-skip-browser-warning": "true" },
-                    body: formData
-                });
-                const data = await response.json();
-                
-                if (data.calories > 0) {
-                    loadHistory();
-                    document.getElementById('foodInput').value = '';
-                    selectedFile = null;
-                    document.getElementById('previewContainer').style.display = 'none';
-                    tg.HapticFeedback.notificationOccurred('success');
-                } else {
-                    tg.showPopup({message: t.error});
-                }
-            } catch (error) {
-                alert("Server Error");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = t.add;
-            }
-        }
-
-        // --- ЛОГИКА VIP ---
-        // 1. Проверяем при старте, купил ли уже юзер VIP
-        async function checkVipStatus() {
-            try {
-                const res = await fetch(`${BASE_URL}/check_vip?user_id=${USER_ID}`, {
+                     // 👇 Это нужно для ngrok, чтобы он не просил нажать кнопку
                     headers: { "ngrok-skip-browser-warning": "true" }
                 });
                 const data = await res.json();
-                if (data.is_vip) {
-                    document.getElementById('vipBadge').style.display = 'inline-block';
-                    document.getElementById('vipCard').style.display = 'none'; // Скрываем кнопку покупки
-                }
-            } catch (e) { console.log("Ошибка проверки VIP"); }
-        }
-
-        // 2. Покупка
-        async function buyVip() {
-            try {
-                const formData = new FormData();
-                formData.append('user_id', USER_ID);
                 
-                // Создаем ссылку на оплату
-                const response = await fetch(`${BASE_URL}/create_invoice`, {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
+                list.innerHTML = "";
+                todayCalories = 0;
 
-                if (data.invoice_link) {
-                    // Открываем Телеграм-оплату
-                    tg.openInvoice(data.invoice_link, (status) => {
-                        if (status === 'paid') {
-                            tg.showAlert("Поздравляем! Вы теперь VIP!");
-                            checkVipStatus(); // Обновляем статус сразу
+                if (data.length === 0) {
+                    list.innerHTML = "<div style='text-align:center; padding:20px; color:#999'>Пока пусто</div>";
+                } else {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    let lastDate = "";
+
+                    data.forEach(item => {
+                        // Считаем сумму за сегодня
+                        if (item.date === todayStr) {
+                            todayCalories += item.calories;
                         }
+
+                        // Рисуем дату, если сменилась
+                        if (item.date !== lastDate) {
+                            const dateDiv = document.createElement('div');
+                            dateDiv.className = 'history-date';
+                            dateDiv.innerText = (item.date === todayStr) ? "СЕГОДНЯ" : item.date;
+                            list.appendChild(dateDiv);
+                            lastDate = item.date;
+                        }
+
+                        // Рисуем еду
+                        const row = document.createElement('li');
+                        row.className = 'history-item';
+                        row.innerHTML = `<span>${item.name}</span> <b>${item.calories}</b>`;
+                        list.appendChild(row);
                     });
                 }
-            } catch (error) {
-                alert("Ошибка соединения с сервером");
+                updateProgress();
+
+            } catch (e) {
+                list.innerText = "Ошибка сервера: " + e;
             }
         }
 
-        // ЗАПУСК ПРИ СТАРТЕ
-        updateUITexts();
-        initProfile(); // Загружает данные профиля и считает норму
-        loadHistory(); // Загружает историю еды
-        checkVipStatus(); // Проверяет VIP
+        function updateProgress() {
+            document.getElementById('valCurrent').innerText = todayCalories;
+            let percent = (todayCalories / dailyGoal) * 100;
+            if (percent > 100) percent = 100;
+            document.getElementById('progressBar').style.width = percent + "%";
+        }
+
+        // --- 4. АНАЛИЗ ЕДЫ ---
+        function handleFile(input) {
+            if (input.files && input.files[0]) {
+                selectedFile = input.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('previewBox').style.display = 'block';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function analyzeFood() {
+            const txt = document.getElementById('foodInput').value;
+            const btn = document.getElementById('btnAnalyze');
+            
+            if (!txt && !selectedFile) return alert("Введите текст или фото");
+
+            btn.disabled = true;
+            btn.innerText = "Считаю...";
+
+            const formData = new FormData();
+            formData.append('user_id', USER_ID);
+            formData.append('text', txt);
+            formData.append('language', document.getElementById('langSelect').value);
+            if(selectedFile) formData.append('photo', selectedFile);
+
+            try {
+                const res = await fetch(`${BASE_URL}/analyze`, { method: 'POST', body: formData });
+                const data = await res.json();
+                
+                if (data.calories > 0) {
+                    tg.showAlert(`✅ ${data.name}: ${data.calories} ккал`);
+                    // Очистка
+                    document.getElementById('foodInput').value = "";
+                    document.getElementById('previewBox').style.display = "none";
+                    selectedFile = null;
+                    document.getElementById('fileInput').value = "";
+                    // Обновляем список
+                    loadHistory();
+                } else {
+                    tg.showAlert("❌ Не удалось распознать еду");
+                }
+            } catch (e) {
+                alert("Ошибка сети");
+            }
+            btn.disabled = false;
+            btn.innerText = "Добавить";
+        }
+
+        // --- 5. VIP ФУНКЦИИ ---
+        async function checkVip() {
+            try {
+                const res = await fetch(`${BASE_URL}/check_vip?user_id=${USER_ID}`,{
+                    headers: { "ngrok-skip-browser-warning": "true" }
+                });
+                const data = await res.json();
+                
+                const promo = document.getElementById('vipPromo');
+                const badge = document.getElementById('vipBadge');
+
+                if (data.is_vip) {
+                    // ЕСЛИ КУПИЛ
+                    promo.style.display = 'none';      // Скрываем кнопку покупки
+                    badge.style.display = 'inline-block'; // Показываем значок
+                } else {
+                    // ЕСЛИ НЕ КУПИЛ
+                    promo.style.display = 'block';     // Показываем кнопку
+                    badge.style.display = 'none';      // Скрываем значок
+                }
+            } catch (e) {
+                console.log("Ошибка проверки VIP");
+            }
+        }
+
+        async function buyVip() {
+            const formData = new FormData();
+            formData.append('user_id', USER_ID);
+            
+            try {
+                const res = await fetch(`${BASE_URL}/create_invoice`, { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.invoice_link) {
+                    tg.openInvoice(data.invoice_link, (status) => {
+                        if (status === 'paid') {
+                            tg.showAlert("Спасибо за покупку!");
+                            checkVip(); // Обновляем статус
+                        }
+                    });
+                }
+            } catch (e) {
+                alert("Ошибка создания счета");
+            }
+        }
+
+        // --- СТАРТ ПРИЛОЖЕНИЯ ---
+        loadProfile(); // 1. Считаем норму
+        loadHistory(); // 2. Грузим историю
+        checkVip();    // 3. Проверяем подписку
+
+        function changeLang() {
+            // Тут можно добавить логику смены языка, если нужно
+            alert("Язык изменен (перевод текстов в разработке)");
+        }
 
     </script>
 </body>
