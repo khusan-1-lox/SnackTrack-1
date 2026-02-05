@@ -3,145 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Nutrition Pro X</title>
+    <title>AI Nutrition Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --bg-color: #000; --card-bg: rgba(30, 30, 30, 0.6); --border-color: rgba(255, 255, 255, 0.1);
-            --text-color: #f0f0f0; --text-muted: #8e8e93; --accent-blue: #0A84FF; --accent-pink: #FF2D55;
-        }
+        :root { --bg-color: #000; --card-bg: rgba(30, 30, 30, 0.7); --border-color: rgba(255, 255, 255, 0.15); --text-color: #f0f0f0; --accent-blue: #0A84FF; }
         body { margin: 0; padding: 16px; font-family: -apple-system, sans-serif; background-color: var(--bg-color); color: var(--text-color); }
-        body::before { content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 10% 20%, #0A84FF 0%, transparent 35%), radial-gradient(circle at 90% 80%, #FF2D55 0%, transparent 35%); animation: background-pan 20s linear infinite; }
-        @keyframes background-pan { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-
-        .screen { display: none; flex-direction: column; gap: 20px; animation: fadeIn 0.4s; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-        #screen-main { display: flex; }
-
+        body::before { content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 10% 20%, #0A84FF 0%, transparent 30%), radial-gradient(circle at 90% 80%, #FF2D55 0%, transparent 30%); }
         .glass-card { background: var(--card-bg); backdrop-filter: blur(25px); border: 1px solid var(--border-color); border-radius: 24px; padding: 20px; }
-        .header { display: flex; align-items: center; gap: 10px; font-size: 28px; font-weight: 700; }
-        .back-btn { font-size: 32px; cursor: pointer; color: var(--text-muted); }
+        textarea { width: 100%; background: transparent; border: none; color: var(--text-color); padding: 15px 0; font-size: 18px; resize: none; outline: none; }
+        .btn-main { width: 100%; margin-top: 15px; background: var(--accent-blue); color: white; border: none; border-radius: 16px; height: 55px; font-weight: 600; font-size: 18px; }
         
-        /* Главный Экран */
-        .progress-bar-bg { width: 100%; height: 12px; background: rgba(255,255,255,0.1); border-radius: 6px; margin-top: 10px; }
-        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #5e5ce6, #0a84ff); border-radius: 6px; width: 0%; transition: width 0.5s; }
-        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .menu-card { padding: 25px 20px; text-align: center; font-weight: 600; cursor: pointer; }
-        .menu-card .icon { font-size: 28px; margin-bottom: 10px; }
-        
-        /* Экран Добавления */
-        .search-input-group { position: relative; }
-        #addFoodInput { width: 100%; background: transparent; border: none; color: #fff; padding: 15px 0; font-size: 18px; outline: none; }
-        .btn-ai-pro { position: absolute; right: 0; bottom: 10px; background: linear-gradient(135deg, #a259ff, #6a0dad); color: white; border: none; border-radius: 12px; padding: 8px 12px; font-weight: 600; }
-        #search-result { display: none; margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 15px; }
-        .btn-add-result { background: var(--accent-blue); color: white; border-radius: 10px; padding: 8px 15px; font-weight: 600; border: none; }
-
-        /* Экран Анализа */
-        .ring-chart { --p: 0; position: relative; width: 150px; height: 150px; border-radius: 50%; margin: 20px auto; background: conic-gradient(var(--accent-blue) calc(var(--p) * 1%), #333 0); }
-        .ring-chart::before { content: ''; position: absolute; top: 15px; left: 15px; width: 120px; height: 120px; border-radius: 50%; background: var(--card-bg); }
-        .ring-center-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; }
-        .ring-value { font-size: 28px; font-weight: 700; }
-        .pfc-grid { display: flex; justify-content: space-around; text-align: center; }
+        /* Стили для экранов */
+        #subscription-view { text-align: center; padding-top: 30vh; }
+        #main-app-view { display: none; flex-direction: column; gap: 16px; }
     </style>
 </head>
 <body>
-    <div class="background-blobs"><div class="blob blob-1"></div><div class="blob blob-2"></div></div>
-
-    <!-- ===== 1. ГЛАВНЫЙ ЭКРАН ===== -->
-    <div id="screen-main" class="screen">
-        <div class="header">Сводка</div>
-        <div class="glass-card">
-            <div style="display:flex; justify-content:space-between; font-weight:600;"><span>Сегодня</span><span><span id="main-curr-cals">0</span> / <span id="main-target-cals">2000</span> ккал</span></div>
-            <div class="progress-bar-bg"><div class="progress-bar-fill" id="main-progress-bar"></div></div>
-        </div>
-        <div class="menu-grid">
-            <div class="glass-card menu-card" onclick="showScreen('add')"><div class="icon">➕</div><div>Добавить</div></div>
-            <div class="glass-card menu-card" onclick="showScreen('analysis')"><div class="icon">📊</div><div>Анализ</div></div>
-            <div class="glass-card menu-card" onclick="showScreen('history')"><div class="icon">📈</div><div>История</div></div>
-            <div class="glass-card menu-card" onclick="openProfile()"><div class="icon">⚙️</div><div>Профиль</div></div>
-        </div>
+    <!-- 1. ЭКРАН ПОДПИСКИ (виден по умолчанию) -->
+    <div id="subscription-view">
+        <h1>PRO Доступ</h1>
+        <p style="color:#888;">Получите полный доступ ко всем функциям, включая анализ ИИ.</p>
+        <button class="btn-main" onclick="subscribe()">Подписаться (Тест)</button>
     </div>
 
-    <!-- ===== 2. ЭКРАН ДОБАВЛЕНИЯ ===== -->
-    <div id="screen-add" class="screen">
-        <div class="header"><div class="back-btn" onclick="showScreen('main')">‹</div><div>Добавить еду</div></div>
+    <!-- 2. ГЛАВНОЕ ПРИЛОЖЕНИЕ (скрыто) -->
+    <div id="main-app-view">
+        <div style="display:flex; justify-content:flex-end;"><button onclick="openProfile()" style="background:transparent;border:none;color:#fff;font-size:24px;">⚙️</button></div>
         <div class="glass-card">
-            <div class="search-input-group">
-                <textarea id="addFoodInput" rows="2" placeholder="Напиши 'яблоко' или 'борщ'" oninput="handleInput()"></textarea>
-                <button class="btn-ai-pro" onclick="analyzeAI()">✨ Анализ ИИ (PRO)</button>
-            </div>
-            <div id="search-result">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <div id="result-name" style="font-weight: 600;"></div>
-                        <div id="result-details" style="color: var(--text-muted); font-size: 14px;"></div>
-                    </div>
-                    <button class="btn-add-result" onclick="addSimpleFood()">Добавить</button>
-                </div>
-            </div>
+            <!-- Статистика -->
+        </div>
+        <div class="glass-card">
+            <textarea id="foodInput" rows="2" placeholder="Съел 2 яйца и тост..."></textarea>
+            <button class="btn-main" id="analyzeBtn" onclick="processFood()">Анализ</button>
+        </div>
+        <div class="glass-card">
+            <div style="font-weight:600; color:#888; margin-bottom:10px;">История</div>
+            <ul id="foodList" style="list-style:none; padding:0; margin:0;"></ul>
         </div>
     </div>
-
-    <!-- ... (остальные экраны и модалка) -->
+    
+    <!-- (Модалка профиля - ее HTML здесь не показан, но он должен быть) -->
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.setHeaderColor('#000'); tg.setBackgroundColor('#000');
+        tg.setHeaderColor('#000');
 
-        // 👇👇👇 ТВОЯ ССЫЛКА NGROK 👇👇👇
-        const BASE_URL = "https://deja-embryoid-rosendo.ngrok-free.dev";
-
+        // 👇 ССЫЛКА NGROK
+        const BASE_URL = " https://deja-embryoid-rosendo.ngrok-free.dev";
         const USER_ID = tg.initDataUnsafe?.user?.id || 1;
-        let lastSearchTimeout, currentFoodResult;
-        
-        function showScreen(screenName) {
-            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-            document.getElementById(`screen-${screenName}`).style.display = 'flex';
-        }
 
-        function handleInput() {
-            clearTimeout(lastSearchTimeout);
-            lastSearchTimeout = setTimeout(() => {
-                const query = document.getElementById('addFoodInput').value;
-                if (query.length > 2) searchSimple(query);
-                else document.getElementById('search-result').style.display = 'none';
-            }, 500);
-        }
-
-        async function searchSimple(query) {
-            const res = await fetch(`${BASE_URL}/search_food?query=${query}`, { headers: {"ngrok-skip-browser-warning":"true"} });
-            const data = await res.json();
-            if (data) {
-                currentFoodResult = data;
-                document.getElementById('result-name').innerText = data.name;
-                document.getElementById('result-details').innerText = `${data.calories} ккал | Б:${data.protein} Ж:${data.fat} У:${data.carbs}`;
-                document.getElementById('search-result').style.display = 'block';
-            } else {
-                document.getElementById('search-result').style.display = 'none';
-            }
-        }
-
-        function addSimpleFood() { if (currentFoodResult) saveMeal(currentFoodResult); }
-
-        async function analyzeAI() {
-            const text = document.getElementById('addFoodInput').value;
-            if (!text) return;
-            tg.showConfirm('Использовать PRO-анализ?', async (ok) => {
-                if (ok) {
-                    const res = await fetch(`${BASE_URL}/analyze_ai`, { method: 'POST', headers: { 'Content-Type': 'application/json', "ngrok-skip-browser-warning": "true" }, body: JSON.stringify({ text }) });
-                    const data = await res.json();
-                    if (data.calories > 0) saveMeal(data);
+        // 1. ПРОВЕРКА ПОДПИСКИ ПРИ ЗАПУСКЕ
+        async function checkSubscription() {
+            try {
+                const res = await fetch(`${BASE_URL}/check_status?user_id=${USER_ID}`, { headers: {"ngrok-skip-browser-warning":"true"} });
+                const data = await res.json();
+                if (data.is_pro) {
+                    document.getElementById('subscription-view').style.display = 'none';
+                    document.getElementById('main-app-view').style.display = 'flex';
+                    // loadData(); // Загружаем профиль и историю
                 }
-            });
+            } catch(e) { tg.showAlert('Ошибка проверки статуса'); }
         }
 
-        async function saveMeal(foodData) {
-            await fetch(`${BASE_URL}/save_meal`, { method: 'POST', headers: { 'Content-Type': 'application/json', "ngrok-skip-browser-warning": "true" }, body: JSON.stringify({ user_id: USER_ID, food: foodData }) });
-            showScreen('main');
+        // 2. "ПОКУПКА" ПОДПИСКИ
+        async function subscribe() {
+            const formData = new FormData();
+            formData.append('user_id', USER_ID);
+            try {
+                await fetch(`${BASE_URL}/subscribe`, { method: 'POST', body: formData, headers: {"ngrok-skip-browser-warning":"true"} });
+                await checkSubscription(); // Перепроверяем статус
+            } catch(e) { tg.showAlert('Ошибка подписки'); }
         }
 
-        showScreen('main');
+        // 3. АНАЛИЗ ЕДЫ
+        async function processFood() {
+            const text = document.getElementById('foodInput').value;
+            if (!text) return;
+            // ... (здесь логика вызова /analyze и /save_meal)
+        }
+
+        // Запускаем проверку при открытии
+        checkSubscription();
     </script>
 </body>
 </html>
