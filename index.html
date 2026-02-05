@@ -3,178 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Calorie Tracker</title>
+    <title>Liquid AI Tracker</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --tg-theme-bg-color: #ffffff;
-            --tg-theme-text-color: #000000;
-            --tg-theme-hint-color: #999999;
-            --tg-theme-button-color: #2481cc;
-            --tg-theme-button-text-color: #ffffff;
-            --tg-theme-secondary-bg-color: #efeff3;
-        }
-
+        /* --- LIQUID GLASS STYLES --- */
         body {
-            background-color: var(--tg-theme-secondary-bg-color);
-            color: var(--tg-theme-text-color);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
-            padding: 16px;
+            padding: 20px;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0f0f13; /* Темный фон */
+            color: #ffffff;
+            overflow-x: hidden;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            overflow-x: hidden;
+            gap: 15px;
         }
 
-        .card {
-            background-color: var(--tg-theme-bg-color);
-            border-radius: 14px;
-            padding: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        /* Живой фон (Градиентные пятна) */
+        .background-blobs {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.6;
+            animation: move 10s infinite alternate;
+        }
+        .blob-1 { top: -10%; left: -10%; width: 300px; height: 300px; background: #7b2cbf; animation-delay: 0s; } /* Фиолетовый */
+        .blob-2 { bottom: 10%; right: -10%; width: 250px; height: 250px; background: #3a0ca3; animation-delay: -2s; } /* Синий */
+        .blob-3 { top: 40%; left: 40%; width: 200px; height: 200px; background: #f72585; opacity: 0.4; animation-duration: 15s; } /* Розовый */
+
+        @keyframes move {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, -30px) scale(1.1); }
+        }
+
+        /* Стеклянные карточки */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.07); /* Полупрозрачный слой */
+            backdrop-filter: blur(16px); /* Эффект размытия */
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15); /* Тонкая рамка */
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- ЭЛЕМЕНТЫ --- */
+        
+        /* Выбор языка */
+        .top-bar { display: flex; justify-content: flex-end; margin-bottom: 5px; }
+        .lang-select {
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 8px 12px;
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+            outline: none;
+            font-size: 14px;
         }
 
         /* Статистика */
         .stats-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            font-size: 15px;
-            font-weight: 600;
+            display: flex; justify-content: space-between;
+            margin-bottom: 15px; font-weight: 700; font-size: 16px; letter-spacing: 0.5px;
+            text-transform: uppercase; color: rgba(255,255,255,0.8);
         }
-        .progress-container {
+        .progress-track {
             width: 100%;
-            background-color: var(--tg-theme-secondary-bg-color);
-            border-radius: 6px;
-            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            height: 12px;
             overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
         }
-        .progress-bar {
+        .progress-fill {
             height: 100%;
-            background-color: var(--tg-theme-button-color);
+            background: linear-gradient(90deg, #f72585, #7209b7); /* Неоновый градиент */
             width: 0%;
-            transition: width 0.4s ease-out;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px rgba(247, 37, 133, 0.5);
         }
 
-        /* Ввод */
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        /* Ввод текста */
         textarea {
             width: 100%;
-            min-height: 60px;
-            padding: 12px;
-            border: 1px solid transparent;
-            background-color: var(--tg-theme-secondary-bg-color);
-            color: var(--tg-theme-text-color);
-            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 15px;
+            border-radius: 15px;
             resize: none;
             font-size: 16px;
-            box-sizing: border-box;
             outline: none;
+            box-sizing: border-box;
+            transition: 0.3s;
         }
         textarea:focus {
-            background-color: var(--tg-theme-bg-color);
-            border-color: var(--tg-theme-button-color);
+            background: rgba(0, 0, 0, 0.4);
+            border-color: #f72585;
         }
+        textarea::placeholder { color: rgba(255,255,255,0.4); }
 
         /* Кнопки */
-        .actions-row {
-            display: flex;
-            gap: 10px;
-        }
+        .actions-row { display: flex; gap: 12px; margin-top: 15px; }
+        
         .btn-photo {
-            flex: 0 0 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: var(--tg-theme-secondary-bg-color);
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 24px;
+            flex: 0 0 60px; height: 60px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px;
+            cursor: pointer; font-size: 26px;
+            transition: 0.2s;
         }
-        #fileInput { display: none; }
+        .btn-photo:active { transform: scale(0.95); background: rgba(255,255,255,0.2); }
 
         .btn-send {
             flex: 1;
-            background-color: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .btn-send:disabled { opacity: 0.6; }
-
-        /* Превью */
-        #previewContainer {
-            display: none;
-            position: relative;
-            margin-bottom: 10px;
-        }
-        #previewImage {
-            width: 100%;
-            border-radius: 10px;
-            max-height: 200px;
-            object-fit: cover;
-        }
-        .remove-photo {
-            position: absolute;
-            top: 5px; right: 5px;
-            background: rgba(0,0,0,0.6);
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
             color: white;
-            border-radius: 50%;
-            width: 24px; height: 24px;
-            text-align: center;
-            line-height: 24px;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 700;
             cursor: pointer;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.4);
+            transition: 0.2s;
         }
+        .btn-send:active { transform: scale(0.98); opacity: 0.9; }
+        .btn-send:disabled { opacity: 0.6; filter: grayscale(1); }
 
-        /* Список */
+        /* Фото превью */
+        #previewContainer { display: none; margin-bottom: 15px; border-radius: 15px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); }
+        #previewImage { width: 100%; display: block; }
+
+        /* История */
         .food-list { list-style: none; padding: 0; margin: 0; }
-        .food-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--tg-theme-secondary-bg-color);
+        .date-header {
+            margin-top: 20px; margin-bottom: 8px;
+            font-size: 12px; color: rgba(255,255,255,0.5);
+            font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+            padding-left: 5px;
         }
+        .food-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .food-item:last-child { border-bottom: none; }
         .food-name { font-weight: 500; font-size: 15px; }
         .food-calories {
-            font-weight: 600;
-            background: var(--tg-theme-secondary-bg-color);
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 13px;
+            font-weight: 700; color: #4cc9f0;
+            text-shadow: 0 0 5px rgba(76, 201, 240, 0.4);
         }
+        #fileInput { display: none; }
+
     </style>
 </head>
 <body>
 
+    <!-- Живой фон -->
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <!-- Язык -->
+    <div class="top-bar">
+        <select id="langSelect" class="lang-select" onchange="changeLanguage()">
+            <option value="ru">🇷🇺 RU</option>
+            <option value="uz">🇺🇿 UZ</option>
+            <option value="en">🇺🇸 EN</option>
+        </select>
+    </div>
+
     <!-- Статистика -->
-    <div class="card">
+    <div class="glass-card">
         <div class="stats-header">
-            <span>Калории сегодня</span>
+            <span id="txtToday">Сегодня</span>
             <span><span id="currentCals">0</span> / 2000</span>
         </div>
-        <div class="progress-container">
-            <div class="progress-bar" id="progressBar"></div>
+        <div class="progress-track">
+            <div class="progress-fill" id="progressBar"></div>
         </div>
     </div>
 
     <!-- Ввод -->
-    <div class="card input-group">
-        <div id="previewContainer">
-            <img id="previewImage" src="" alt="Preview">
-            <div class="remove-photo" onclick="clearPhoto()">✕</div>
-        </div>
-
-        <textarea id="foodInput" placeholder="Что съели? (Или фото)"></textarea>
+    <div class="glass-card">
+        <div id="previewContainer"><img id="previewImage" src=""></div>
+        
+        <textarea id="foodInput" placeholder="Что съели?"></textarea>
         
         <div class="actions-row">
             <label class="btn-photo">
@@ -186,37 +212,97 @@
     </div>
 
     <!-- История -->
-    <div class="card">
-        <div class="stats-header">История</div>
+    <div class="glass-card">
+        <div class="stats-header" id="txtHistory" style="margin-bottom: 0;">История</div>
         <ul class="food-list" id="foodList">
-            <li class="food-item" id="emptyState" style="color: var(--tg-theme-hint-color); justify-content: center;">
-                Список пуст
-            </li>
+            <li style="text-align:center; color:rgba(255,255,255,0.4); padding:20px" id="txtEmpty">Загрузка...</li>
         </ul>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+        // Включаем темную тему принудительно для эффекта
+        tg.setHeaderColor('#0f0f13');
+        tg.setBackgroundColor('#0f0f13');
 
-        // ------------------------------------------------------------
-        // 👇 ВСТАВЬ СЮДА ССЫЛКУ ИЗ NGROK 👇
-        // Пример: "https://a1b2-c3d4.ngrok-free.app/analyze"
-        // ------------------------------------------------------------
-        const SERVER_URL = "https://deja-embryoid-rosendo.ngrok-free.dev/analyze"; 
-        // ------------------------------------------------------------
+        // 👇👇👇 ТВОЯ ССЫЛКА NGROK 👇👇👇
+        const BASE_URL = "https://ТВОЯ-ССЫЛКА.ngrok-free.app"; 
 
-        let totalCalories = 0;
+        const USER_ID = tg.initDataUnsafe?.user?.id || 0;
+        let currentLang = localStorage.getItem('app_lang') || 'ru';
+        document.getElementById('langSelect').value = currentLang;
+
+        const TRANSLATIONS = {
+            'ru': { today: 'Сегодня', history: 'История', add: 'Анализ', think: 'Думаю...', input: 'Напиши, что съел...', empty: 'Пока пусто', error: 'Не понял' },
+            'uz': { today: 'Bugun', history: 'Tarix', add: "Tahlil", think: 'O\'ylayapman...', input: 'Nima yediz?', empty: 'Hozircha bo\'sh', error: 'Tushunmadim' },
+            'en': { today: 'Today', history: 'History', add: 'Analyze', think: 'Thinking...', input: 'What did you eat?', empty: 'Empty', error: 'Did not understand' }
+        };
+
+        function updateUITexts() {
+            const t = TRANSLATIONS[currentLang];
+            document.getElementById('txtToday').innerText = t.today;
+            document.getElementById('txtHistory').innerText = t.history;
+            document.getElementById('analyzeBtn').innerText = t.add;
+            document.getElementById('foodInput').placeholder = t.input;
+            if(document.getElementById('txtEmpty')) document.getElementById('txtEmpty').innerText = t.empty;
+        }
+
+        function changeLanguage() {
+            currentLang = document.getElementById('langSelect').value;
+            localStorage.setItem('app_lang', currentLang);
+            updateUITexts();
+        }
+
+        let todayCalories = 0;
         const DAILY_GOAL = 2000;
         let selectedFile = null;
 
-        // Обработка выбора фото
+        async function loadHistory() {
+            try {
+                const res = await fetch(`${BASE_URL}/get_history?user_id=${USER_ID}`, {
+                    headers: { "ngrok-skip-browser-warning": "true" }
+                });
+                const history = await res.json();
+                
+                const list = document.getElementById('foodList');
+                list.innerHTML = '';
+                todayCalories = 0;
+
+                if (history.length === 0) {
+                    list.innerHTML = `<li id="txtEmpty" style="text-align:center; color:rgba(255,255,255,0.4); padding:20px">${TRANSLATIONS[currentLang].empty}</li>`;
+                    return;
+                }
+
+                let lastDate = null;
+                const todayStr = new Date().toISOString().split('T')[0];
+
+                history.forEach(item => {
+                    if (item.date === todayStr) {
+                        todayCalories += item.calories;
+                    }
+                    if (item.date !== lastDate) {
+                        const dateHeader = document.createElement('div');
+                        dateHeader.className = 'date-header';
+                        dateHeader.innerText = (item.date === todayStr) ? TRANSLATIONS[currentLang].today : item.date;
+                        list.appendChild(dateHeader);
+                        lastDate = item.date;
+                    }
+                    const li = document.createElement('li');
+                    li.className = 'food-item';
+                    li.innerHTML = `<span class="food-name">${item.name}</span><span class="food-calories">${item.calories}</span>`;
+                    list.appendChild(li);
+                });
+                updateStats();
+            } catch (e) { console.error(e); }
+        }
+
         function handleFileSelect(event) {
             const file = event.target.files[0];
             if (file) {
                 selectedFile = file;
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = e => {
                     document.getElementById('previewImage').src = e.target.result;
                     document.getElementById('previewContainer').style.display = 'block';
                 }
@@ -224,86 +310,56 @@
             }
         }
 
-        function clearPhoto() {
-            selectedFile = null;
-            document.getElementById('fileInput').value = "";
-            document.getElementById('previewContainer').style.display = 'none';
-        }
-
-        // ОТПРАВКА НА СЕРВЕР
         async function processFood() {
             const textInput = document.getElementById('foodInput').value.trim();
             const btn = document.getElementById('analyzeBtn');
+            const t = TRANSLATIONS[currentLang];
 
-            if (!textInput && !selectedFile) {
-                tg.showPopup({message: 'Нужен текст или фото!'});
-                return;
-            }
+            if (!textInput && !selectedFile) return;
 
-            // Блокируем кнопку
             btn.disabled = true;
-            btn.innerText = "Думаю...";
+            btn.innerText = t.think;
 
             const formData = new FormData();
             formData.append('text', textInput);
-            if (selectedFile) {
-                formData.append('photo', selectedFile);
-            }
+            formData.append('user_id', USER_ID);
+            formData.append('language', currentLang);
+            if (selectedFile) formData.append('photo', selectedFile);
 
             try {
-                const response = await fetch(SERVER_URL, {
+                const response = await fetch(`${BASE_URL}/analyze`, {
                     method: 'POST',
-                    headers: {
-                        // Эта строка важна для бесплатного Ngrok
-                        "ngrok-skip-browser-warning": "true"
-                    },
+                    headers: { "ngrok-skip-browser-warning": "true" },
                     body: formData
                 });
-
-                if (!response.ok) throw new Error('Ошибка сети');
-
                 const data = await response.json();
 
-                if (data.calories === 0 && data.name === "Не понятно") {
-                     tg.showPopup({message: 'Не понял, что это за еда 🤔'});
-                } else {
-                    addRecord(data.name, data.calories);
+                if (data.calories > 0) {
+                    loadHistory();
                     document.getElementById('foodInput').value = '';
-                    clearPhoto();
+                    selectedFile = null;
+                    document.getElementById('previewContainer').style.display = 'none';
                     tg.HapticFeedback.notificationOccurred('success');
+                } else {
+                    tg.showPopup({message: t.error});
                 }
-
             } catch (error) {
-                alert("Ошибка! Проверь, работает ли Python и правильная ли ссылка Ngrok.");
-                console.error(error);
+                alert("Server Error");
             } finally {
                 btn.disabled = false;
-                btn.innerText = "Добавить";
+                btn.innerText = t.add;
             }
         }
 
-        function addRecord(name, cals) {
-            const list = document.getElementById('foodList');
-            const emptyState = document.getElementById('emptyState');
-            if (emptyState) emptyState.remove();
-
-            const li = document.createElement('li');
-            li.className = 'food-item';
-            li.innerHTML = `
-                <div class="food-info">
-                    <span class="food-name">${name}</span>
-                </div>
-                <span class="food-calories">${cals} ккал</span>
-            `;
-            list.prepend(li);
-            totalCalories += cals;
-            
-            // Обновляем прогресс
-            document.getElementById('currentCals').innerText = totalCalories;
-            let percent = (totalCalories / DAILY_GOAL) * 100;
+        function updateStats() {
+            document.getElementById('currentCals').innerText = todayCalories;
+            let percent = (todayCalories / DAILY_GOAL) * 100;
             if (percent > 100) percent = 100;
             document.getElementById('progressBar').style.width = percent + '%';
         }
+
+        updateUITexts();
+        loadHistory();
     </script>
 </body>
 </html>
