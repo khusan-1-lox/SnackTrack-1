@@ -8,83 +8,119 @@
     <style>
         :root { --bg-color: #000; --card-bg: rgba(30, 30, 30, 0.7); --border-color: rgba(255, 255, 255, 0.15); --text-color: #f0f0f0; --accent-blue: #0A84FF; }
         body { margin: 0; padding: 16px; font-family: -apple-system, sans-serif; background-color: var(--bg-color); color: var(--text-color); }
-        body::before { content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 10% 20%, #0A84FF 0%, transparent 30%), radial-gradient(circle at 90% 80%, #FF2D55 0%, transparent 30%); }
+        body::before { content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 10% 20%, #0A84FF 0%, transparent 30%), radial-gradient(circle at 90% 80%, #FF2D55 0%, transparent 30%); animation: background-pan 20s linear infinite; }
+        @keyframes background-pan { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        .view { display: none; }
         .glass-card { background: var(--card-bg); backdrop-filter: blur(25px); border: 1px solid var(--border-color); border-radius: 24px; padding: 20px; }
-        textarea { width: 100%; background: transparent; border: none; color: var(--text-color); padding: 15px 0; font-size: 18px; resize: none; outline: none; }
-        .btn-main { width: 100%; margin-top: 15px; background: var(--accent-blue); color: white; border: none; border-radius: 16px; height: 55px; font-weight: 600; font-size: 18px; }
-        
-        /* Стили для экранов */
-        #subscription-view { text-align: center; padding-top: 30vh; }
-        #main-app-view { display: none; flex-direction: column; gap: 16px; }
+        .btn-main { width: 100%; background: var(--accent-blue); color: white; border: none; border-radius: 16px; height: 55px; font-weight: 600; font-size: 18px; }
     </style>
 </head>
 <body>
-    <!-- 1. ЭКРАН ПОДПИСКИ (виден по умолчанию) -->
-    <div id="subscription-view">
+    <!-- 1. ЭКРАН ПОДПИСКИ -->
+    <div id="subscription-view" class="view" style="text-align:center; padding-top: 30vh;">
         <h1>PRO Доступ</h1>
-        <p style="color:#888;">Получите полный доступ ко всем функциям, включая анализ ИИ.</p>
+        <p style="color:#888;">Рассчитайте свой личный план питания и получите доступ к ИИ-анализу.</p>
         <button class="btn-main" onclick="subscribe()">Подписаться (Тест)</button>
     </div>
 
-    <!-- 2. ГЛАВНОЕ ПРИЛОЖЕНИЕ (скрыто) -->
-    <div id="main-app-view">
-        <div style="display:flex; justify-content:flex-end;"><button onclick="openProfile()" style="background:transparent;border:none;color:#fff;font-size:24px;">⚙️</button></div>
+    <!-- 2. ЭКРАН ПРОФИЛЯ -->
+    <div id="profile-view" class="view">
+        <h2 style="margin-top:0">Расскажи о себе</h2>
+        <!-- (Сюда можно вставить HTML-форму профиля из предыдущих версий) -->
+        <button class="btn-main" onclick="saveProfile()">Рассчитать и начать</button>
+    </div>
+
+    <!-- 3. ГЛАВНОЕ ПРИЛОЖЕНИЕ -->
+    <div id="main-app-view" class="view" style="display:flex; flex-direction:column; gap:16px;">
         <div class="glass-card">
-            <!-- Статистика -->
+            <!-- Статистика КБЖУ -->
         </div>
         <div class="glass-card">
             <textarea id="foodInput" rows="2" placeholder="Съел 2 яйца и тост..."></textarea>
-            <button class="btn-main" id="analyzeBtn" onclick="processFood()">Анализ</button>
+            <button class="btn-main" style="margin-top:15px;" onclick="analyzeFood()">Добавить</button>
         </div>
         <div class="glass-card">
-            <div style="font-weight:600; color:#888; margin-bottom:10px;">История</div>
+            <div style="font-weight:600; color:#888; margin-bottom:10px;">Дневной рацион</div>
             <ul id="foodList" style="list-style:none; padding:0; margin:0;"></ul>
+            <button onclick="analyzeDay()" style="width:100%; background:transparent; border:1px solid #555; color:#fff; padding:10px; border-radius:10px; margin-top:15px;">✨ Проанализировать день</button>
+        </div>
+        <div class="glass-card">
+            <div style="font-weight:600; color:#888; margin-bottom:10px;">История за неделю</div>
+            <div id="weekly-summary" style="font-size:14px; line-height:1.6; white-space:pre;"></div>
         </div>
     </div>
-    
-    <!-- (Модалка профиля - ее HTML здесь не показан, но он должен быть) -->
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
         tg.setHeaderColor('#000');
 
-        // 👇 ССЫЛКА NGROK
-        const BASE_URL = " https://deja-embryoid-rosendo.ngrok-free.dev";
+        const BASE_URL = "https://deja-embryoid-rosendo.ngrok-free.dev";
         const USER_ID = tg.initDataUnsafe?.user?.id || 1;
 
-        // 1. ПРОВЕРКА ПОДПИСКИ ПРИ ЗАПУСКЕ
-        async function checkSubscription() {
-            try {
-                const res = await fetch(`${BASE_URL}/check_status?user_id=${USER_ID}`, { headers: {"ngrok-skip-browser-warning":"true"} });
-                const data = await res.json();
-                if (data.is_pro) {
-                    document.getElementById('subscription-view').style.display = 'none';
-                    document.getElementById('main-app-view').style.display = 'flex';
-                    // loadData(); // Загружаем профиль и историю
-                }
-            } catch(e) { tg.showAlert('Ошибка проверки статуса'); }
+        // ----- ГЛАВНАЯ ЛОГИКА -----
+        async function init() {
+            const res = await fetch(`${BASE_URL}/check_status?user_id=${USER_ID}`, { headers: {"ngrok-skip-browser-warning":"true"} });
+            const data = await res.json();
+            if (!data.is_pro) {
+                showView('subscription-view');
+            } else if (!data.has_profile) {
+                showView('profile-view');
+            } else {
+                showView('main-app-view');
+                loadAllData();
+            }
+        }
+        
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+            document.getElementById(viewId).style.display = 'block';
         }
 
-        // 2. "ПОКУПКА" ПОДПИСКИ
         async function subscribe() {
             const formData = new FormData();
             formData.append('user_id', USER_ID);
-            try {
-                await fetch(`${BASE_URL}/subscribe`, { method: 'POST', body: formData, headers: {"ngrok-skip-browser-warning":"true"} });
-                await checkSubscription(); // Перепроверяем статус
-            } catch(e) { tg.showAlert('Ошибка подписки'); }
+            await fetch(`${BASE_URL}/subscribe`, { method: 'POST', body: formData });
+            init(); // Перепроверяем статус
         }
 
-        // 3. АНАЛИЗ ЕДЫ
-        async function processFood() {
+        async function saveProfile() {
+            // ... (здесь логика сбора данных из формы профиля)
+            const formData = new FormData();
+            // ...
+            await fetch(`${BASE_URL}/save_profile`, { method: 'POST', body: formData });
+            init(); // Перепроверяем статус
+        }
+        
+        async function analyzeFood() {
             const text = document.getElementById('foodInput').value;
             if (!text) return;
-            // ... (здесь логика вызова /analyze и /save_meal)
+            // 1. Анализируем через ИИ
+            const res = await fetch(`${BASE_URL}/analyze`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({text})});
+            const foodData = await res.json();
+            if (foodData.calories > 0) {
+                // 2. Сохраняем еду
+                await fetch(`${BASE_URL}/save_meal`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({user_id: USER_ID, food: foodData})});
+                loadAllData(); // Обновляем всё
+            }
         }
 
-        // Запускаем проверку при открытии
-        checkSubscription();
+        async function analyzeDay() {
+            const res = await fetch(`${BASE_URL}/analyze_day?user_id=${USER_ID}`);
+            const data = await res.json();
+            tg.showAlert(data.analysis);
+        }
+
+        async function loadAllData() {
+            const res = await fetch(`${BASE_URL}/get_data?user_id=${USER_ID}`);
+            const data = await res.json();
+            
+            // ... (здесь код для отрисовки статистики и истории)
+            // ...
+        }
+
+        // Запуск!
+        init();
     </script>
 </body>
 </html>
