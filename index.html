@@ -3,297 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Nutrition Pro</title>
+    <title>AI Nutrition Pro X</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* GLASS & NEON THEME */
-        body {
-            margin: 0; padding: 16px; font-family: 'Segoe UI', sans-serif;
-            background-color: #0f0f13; color: #fff;
-            min-height: 100vh; display: flex; flex-direction: column; gap: 15px;
+        :root {
+            --bg-color: #000; --card-bg: rgba(30, 30, 30, 0.6); --border-color: rgba(255, 255, 255, 0.1);
+            --text-color: #f0f0f0; --text-muted: #8e8e93; --accent-blue: #0A84FF; --accent-pink: #FF2D55;
         }
-        .background-blobs { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; pointer-events: none; }
-        .blob { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.5; animation: move 10s infinite alternate; }
-        .blob-1 { top: -10%; left: -10%; width: 300px; height: 300px; background: #7b2cbf; }
-        .blob-2 { bottom: 10%; right: -10%; width: 250px; height: 250px; background: #3a0ca3; }
+        body { margin: 0; padding: 16px; font-family: -apple-system, sans-serif; background-color: var(--bg-color); color: var(--text-color); }
+        body::before { content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 10% 20%, #0A84FF 0%, transparent 35%), radial-gradient(circle at 90% 80%, #FF2D55 0%, transparent 35%); animation: background-pan 20s linear infinite; }
+        @keyframes background-pan { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
 
-        @keyframes move { from { transform: translate(0,0); } to { transform: translate(20px, -20px); } }
+        .screen { display: none; flex-direction: column; gap: 20px; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        #screen-main { display: flex; }
 
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 20px;
-        }
-
-        /* Верхняя панель */
-        .top-bar { display: flex; justify-content: space-between; align-items: center; }
-        .btn-icon { background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 8px 12px; border-radius: 10px; cursor: pointer; font-size: 18px; }
-        select { background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 5px; border-radius: 8px; outline: none; }
-
-        /* Статистика */
-        .main-stats { text-align: center; margin-bottom: 15px; }
-        .cals-big { font-size: 32px; font-weight: 800; background: linear-gradient(90deg, #f72585, #4cc9f0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .cals-sub { font-size: 14px; color: rgba(255,255,255,0.6); }
-
-        /* Макросы (БЖУ) */
-        .macros-grid { display: flex; gap: 10px; margin-top: 10px; }
-        .macro-item { flex: 1; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 12px; font-size: 12px; text-align: center; }
-        .macro-val { font-weight: bold; font-size: 14px; display: block; }
-        .macro-bar-bg { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 5px; }
-        .macro-bar-fill { height: 100%; border-radius: 2px; width: 0%; transition: width 0.5s; }
+        .glass-card { background: var(--card-bg); backdrop-filter: blur(25px); border: 1px solid var(--border-color); border-radius: 24px; padding: 20px; }
+        .header { display: flex; align-items: center; gap: 10px; font-size: 28px; font-weight: 700; }
+        .back-btn { font-size: 32px; cursor: pointer; color: var(--text-muted); }
         
-        .p-color { color: #4cc9f0; } .p-bg { background: #4cc9f0; } /* Белки */
-        .f-color { color: #f72585; } .f-bg { background: #f72585; } /* Жиры */
-        .c-color { color: #fee440; } .c-bg { background: #fee440; } /* Углеводы */
+        /* Главный Экран */
+        .progress-bar-bg { width: 100%; height: 12px; background: rgba(255,255,255,0.1); border-radius: 6px; margin-top: 10px; }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #5e5ce6, #0a84ff); border-radius: 6px; width: 0%; transition: width 0.5s; }
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .menu-card { padding: 25px 20px; text-align: center; font-weight: 600; cursor: pointer; }
+        .menu-card .icon { font-size: 28px; margin-bottom: 10px; }
+        
+        /* Экран Добавления */
+        .search-input-group { position: relative; }
+        #addFoodInput { width: 100%; background: transparent; border: none; color: #fff; padding: 15px 0; font-size: 18px; outline: none; }
+        .btn-ai-pro { position: absolute; right: 0; bottom: 10px; background: linear-gradient(135deg, #a259ff, #6a0dad); color: white; border: none; border-radius: 12px; padding: 8px 12px; font-weight: 600; }
+        #search-result { display: none; margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 15px; }
+        .btn-add-result { background: var(--accent-blue); color: white; border-radius: 10px; padding: 8px 15px; font-weight: 600; border: none; }
 
-        /* Ввод */
-        textarea { width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 15px; border-radius: 15px; resize: none; outline: none; box-sizing: border-box; }
-        .actions-row { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-send { flex: 1; background: linear-gradient(135deg, #4361ee, #3a0ca3); color: white; border: none; border-radius: 12px; height: 50px; font-weight: bold; font-size: 16px; }
-        .btn-photo { width: 50px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; }
-        #fileInput { display: none; }
-        #previewContainer { display: none; margin-bottom: 10px; }
-        #previewImage { width: 100%; border-radius: 10px; }
-
-        /* Модалка Профиля */
-        #profileModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
-        .modal-content { background: #1a1a20; padding: 20px; border-radius: 20px; width: 80%; border: 1px solid rgba(255,255,255,0.1); }
-        .form-group { margin-bottom: 10px; }
-        .form-group label { display: block; font-size: 12px; margin-bottom: 5px; color: #aaa; }
-        .form-control { width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box;}
-        .btn-save { width: 100%; background: #4cc9f0; color: #000; padding: 10px; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; }
-
-        /* Список еды */
-        .food-list { list-style: none; padding: 0; margin: 0; }
-        .food-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .food-desc { font-size: 12px; color: #888; margin-top: 2px; }
+        /* Экран Анализа */
+        .ring-chart { --p: 0; position: relative; width: 150px; height: 150px; border-radius: 50%; margin: 20px auto; background: conic-gradient(var(--accent-blue) calc(var(--p) * 1%), #333 0); }
+        .ring-chart::before { content: ''; position: absolute; top: 15px; left: 15px; width: 120px; height: 120px; border-radius: 50%; background: var(--card-bg); }
+        .ring-center-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; }
+        .ring-value { font-size: 28px; font-weight: 700; }
+        .pfc-grid { display: flex; justify-content: space-around; text-align: center; }
     </style>
 </head>
 <body>
     <div class="background-blobs"><div class="blob blob-1"></div><div class="blob blob-2"></div></div>
 
-    <!-- Верхняя панель -->
-    <div class="top-bar">
-        <button class="btn-icon" onclick="openProfile()">⚙️</button>
-        <select id="langSelect" onchange="changeLanguage()">
-            <option value="ru">RU</option> <option value="uz">UZ</option> <option value="en">EN</option>
-        </select>
-    </div>
-
-    <!-- Главная статистика -->
-    <div class="glass-card">
-        <div class="main-stats">
-            <div class="cals-big"><span id="currCals">0</span> / <span id="targetCals">2000</span></div>
-            <div class="cals-sub" id="txtKcal">ккал сегодня</div>
+    <!-- ===== 1. ГЛАВНЫЙ ЭКРАН ===== -->
+    <div id="screen-main" class="screen">
+        <div class="header">Сводка</div>
+        <div class="glass-card">
+            <div style="display:flex; justify-content:space-between; font-weight:600;"><span>Сегодня</span><span><span id="main-curr-cals">0</span> / <span id="main-target-cals">2000</span> ккал</span></div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill" id="main-progress-bar"></div></div>
         </div>
-
-        <!-- БЖУ Бары -->
-        <div class="macros-grid">
-            <div class="macro-item">
-                <span class="p-color">Protein</span>
-                <span class="macro-val"><span id="currP">0</span>/<span id="targetP">150</span></span>
-                <div class="macro-bar-bg"><div class="macro-bar-fill p-bg" id="barP"></div></div>
-            </div>
-            <div class="macro-item">
-                <span class="f-color">Fat</span>
-                <span class="macro-val"><span id="currF">0</span>/<span id="targetF">70</span></span>
-                <div class="macro-bar-bg"><div class="macro-bar-fill f-bg" id="barF"></div></div>
-            </div>
-            <div class="macro-item">
-                <span class="c-color">Carbs</span>
-                <span class="macro-val"><span id="currC">0</span>/<span id="targetC">200</span></span>
-                <div class="macro-bar-bg"><div class="macro-bar-fill c-bg" id="barC"></div></div>
-            </div>
+        <div class="menu-grid">
+            <div class="glass-card menu-card" onclick="showScreen('add')"><div class="icon">➕</div><div>Добавить</div></div>
+            <div class="glass-card menu-card" onclick="showScreen('analysis')"><div class="icon">📊</div><div>Анализ</div></div>
+            <div class="glass-card menu-card" onclick="showScreen('history')"><div class="icon">📈</div><div>История</div></div>
+            <div class="glass-card menu-card" onclick="openProfile()"><div class="icon">⚙️</div><div>Профиль</div></div>
         </div>
     </div>
 
-    <!-- Ввод -->
-    <div class="glass-card">
-        <div id="previewContainer"><img id="previewImage"></div>
-        <textarea id="foodInput" placeholder="Что съели?"></textarea>
-        <div class="actions-row">
-            <label class="btn-photo">📷<input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)"></label>
-            <button class="btn-send" id="analyzeBtn" onclick="processFood()">Анализ</button>
+    <!-- ===== 2. ЭКРАН ДОБАВЛЕНИЯ ===== -->
+    <div id="screen-add" class="screen">
+        <div class="header"><div class="back-btn" onclick="showScreen('main')">‹</div><div>Добавить еду</div></div>
+        <div class="glass-card">
+            <div class="search-input-group">
+                <textarea id="addFoodInput" rows="2" placeholder="Напиши 'яблоко' или 'борщ'" oninput="handleInput()"></textarea>
+                <button class="btn-ai-pro" onclick="analyzeAI()">✨ Анализ ИИ (PRO)</button>
+            </div>
+            <div id="search-result">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div id="result-name" style="font-weight: 600;"></div>
+                        <div id="result-details" style="color: var(--text-muted); font-size: 14px;"></div>
+                    </div>
+                    <button class="btn-add-result" onclick="addSimpleFood()">Добавить</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- История -->
-    <div class="glass-card">
-        <div style="margin-bottom:10px; font-weight:bold; color:#aaa;">История</div>
-        <ul class="food-list" id="foodList"></ul>
-    </div>
-
-    <!-- МОДАЛКА ПРОФИЛЯ -->
-    <div id="profileModal">
-        <div class="modal-content">
-            <h3 style="margin-top:0">Мои данные</h3>
-            <div class="form-group"><label>Вес (кг)</label><input type="number" id="pWeight" class="form-control" value="70"></div>
-            <div class="form-group"><label>Рост (см)</label><input type="number" id="pHeight" class="form-control" value="175"></div>
-            <div class="form-group"><label>Возраст</label><input type="number" id="pAge" class="form-control" value="25"></div>
-            <div class="form-group"><label>Пол</label>
-                <select id="pGender" class="form-control"><option value="male">Мужской</option><option value="female">Женский</option></select>
-            </div>
-            <div class="form-group"><label>Цель</label>
-                <select id="pGoal" class="form-control">
-                    <option value="lose">Похудеть</option>
-                    <option value="maintain" selected>Поддержать</option>
-                    <option value="gain">Набрать</option>
-                </select>
-            </div>
-            <div class="form-group"><label>Активность</label>
-                <select id="pActivity" class="form-control">
-                    <option value="low">Сидячая</option>
-                    <option value="medium">Средняя</option>
-                    <option value="high">Активная</option>
-                </select>
-            </div>
-            <button class="btn-save" onclick="saveProfile()">Сохранить и Рассчитать</button>
-            <button onclick="document.getElementById('profileModal').style.display='none'" style="width:100%; background:transparent; border:none; color:#aaa; margin-top:10px;">Закрыть</button>
-        </div>
-    </div>
+    <!-- ... (остальные экраны и модалка) -->
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.setHeaderColor('#0f0f13'); 
+        tg.setHeaderColor('#000'); tg.setBackgroundColor('#000');
 
-        // 👇 ССЫЛКА NGROK
-        const BASE_URL = " https://deja-embryoid-rosendo.ngrok-free.dev"; 
+        // 👇👇👇 ТВОЯ ССЫЛКА NGROK 👇👇👇
+        const BASE_URL = "https://deja-embryoid-rosendo.ngrok-free.dev";
 
-        const USER_ID = tg.initDataUnsafe?.user?.id || 1; // 1 для теста
-        let currentLang = 'ru';
-
-        // Данные (Сумма за сегодня)
-        let stats = { cals: 0, p: 0, f: 0, c: 0 };
-        let targets = { cals: 2000, p: 150, f: 70, c: 200 };
-
-        // Инициализация
-        loadProfile();
-        loadHistory();
-
-        // 1. Загрузка профиля и целей
-        async function loadProfile() {
-            try {
-                const res = await fetch(`${BASE_URL}/get_profile?user_id=${USER_ID}`, { headers: {"ngrok-skip-browser-warning":"true"} });
-                const data = await res.json();
-                targets = data;
-                updateStatsUI();
-            } catch(e) { console.error(e); }
+        const USER_ID = tg.initDataUnsafe?.user?.id || 1;
+        let lastSearchTimeout, currentFoodResult;
+        
+        function showScreen(screenName) {
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            document.getElementById(`screen-${screenName}`).style.display = 'flex';
         }
 
-        // 2. Сохранение профиля
-        async function saveProfile() {
-            const formData = new FormData();
-            formData.append('user_id', USER_ID);
-            formData.append('weight', document.getElementById('pWeight').value);
-            formData.append('height', document.getElementById('pHeight').value);
-            formData.append('age', document.getElementById('pAge').value);
-            formData.append('gender', document.getElementById('pGender').value);
-            formData.append('goal', document.getElementById('pGoal').value);
-            formData.append('activity', document.getElementById('pActivity').value);
-
-            try {
-                const res = await fetch(`${BASE_URL}/save_profile`, { method: 'POST', body: formData });
-                const data = await res.json();
-                targets = data.targets; // Обновляем цели
-                document.getElementById('profileModal').style.display = 'none';
-                updateStatsUI();
-                tg.showPopup({message: 'План пересчитан!'});
-            } catch(e) { alert("Ошибка сохранения"); }
+        function handleInput() {
+            clearTimeout(lastSearchTimeout);
+            lastSearchTimeout = setTimeout(() => {
+                const query = document.getElementById('addFoodInput').value;
+                if (query.length > 2) searchSimple(query);
+                else document.getElementById('search-result').style.display = 'none';
+            }, 500);
         }
 
-        // 3. Загрузка истории
-        async function loadHistory() {
-            try {
-                const res = await fetch(`${BASE_URL}/get_history?user_id=${USER_ID}`, { headers: {"ngrok-skip-browser-warning":"true"} });
-                const history = await res.json();
-                
-                const list = document.getElementById('foodList');
-                list.innerHTML = '';
-                stats = { cals: 0, p: 0, f: 0, c: 0 };
-                const todayStr = new Date().toISOString().split('T')[0];
-
-                history.forEach(item => {
-                    // Считаем сумму за сегодня
-                    if(item.date === todayStr) {
-                        stats.cals += item.calories;
-                        stats.p += (item.p || 0);
-                        stats.f += (item.f || 0);
-                        stats.c += (item.c || 0);
-                    }
-
-                    // Рисуем список
-                    const li = document.createElement('li');
-                    li.className = 'food-item';
-                    li.innerHTML = `
-                        <div>
-                            <div style="font-weight:500;">${item.name}</div>
-                            <div class="food-desc">P: ${item.p||0} | F: ${item.f||0} | C: ${item.c||0}</div>
-                        </div>
-                        <div style="font-weight:bold; color:#4cc9f0;">${item.calories}</div>
-                    `;
-                    list.appendChild(li);
-                });
-                updateStatsUI();
-            } catch(e) { console.error(e); }
+        async function searchSimple(query) {
+            const res = await fetch(`${BASE_URL}/search_food?query=${query}`, { headers: {"ngrok-skip-browser-warning":"true"} });
+            const data = await res.json();
+            if (data) {
+                currentFoodResult = data;
+                document.getElementById('result-name').innerText = data.name;
+                document.getElementById('result-details').innerText = `${data.calories} ккал | Б:${data.protein} Ж:${data.fat} У:${data.carbs}`;
+                document.getElementById('search-result').style.display = 'block';
+            } else {
+                document.getElementById('search-result').style.display = 'none';
+            }
         }
 
-        // 4. UI Обновление
-        function updateStatsUI() {
-            document.getElementById('currCals').innerText = stats.cals;
-            document.getElementById('targetCals').innerText = targets.cals;
-            
-            document.getElementById('currP').innerText = stats.p;
-            document.getElementById('targetP').innerText = targets.p;
-            document.getElementById('barP').style.width = Math.min((stats.p / targets.p)*100, 100) + '%';
+        function addSimpleFood() { if (currentFoodResult) saveMeal(currentFoodResult); }
 
-            document.getElementById('currF').innerText = stats.f;
-            document.getElementById('targetF').innerText = targets.f;
-            document.getElementById('barF').style.width = Math.min((stats.f / targets.f)*100, 100) + '%';
-
-            document.getElementById('currC').innerText = stats.c;
-            document.getElementById('targetC').innerText = targets.c;
-            document.getElementById('barC').style.width = Math.min((stats.c / targets.c)*100, 100) + '%';
-        }
-
-        // 5. Анализ еды
-        async function processFood() {
-            const textInput = document.getElementById('foodInput').value.trim();
-            const btn = document.getElementById('analyzeBtn');
-            const file = document.getElementById('fileInput').files[0];
-
-            if(!textInput && !file) return;
-            btn.disabled = true; btn.innerText = "...";
-
-            const formData = new FormData();
-            formData.append('text', textInput);
-            formData.append('user_id', USER_ID);
-            formData.append('language', document.getElementById('langSelect').value);
-            if(file) formData.append('photo', file);
-
-            try {
-                const res = await fetch(`${BASE_URL}/analyze`, { method: 'POST', body: formData, headers: {"ngrok-skip-browser-warning":"true"} });
-                const data = await res.json();
-                if(data.calories > 0) {
-                    loadHistory();
-                    document.getElementById('foodInput').value = '';
-                    document.getElementById('previewContainer').style.display = 'none';
-                    tg.HapticFeedback.notificationOccurred('success');
-                } else {
-                    tg.showPopup({message: 'Не распознано'});
+        async function analyzeAI() {
+            const text = document.getElementById('addFoodInput').value;
+            if (!text) return;
+            tg.showConfirm('Использовать PRO-анализ?', async (ok) => {
+                if (ok) {
+                    const res = await fetch(`${BASE_URL}/analyze_ai`, { method: 'POST', headers: { 'Content-Type': 'application/json', "ngrok-skip-browser-warning": "true" }, body: JSON.stringify({ text }) });
+                    const data = await res.json();
+                    if (data.calories > 0) saveMeal(data);
                 }
-            } catch(e) { alert("Error"); }
-            finally { btn.disabled = false; btn.innerText = "Анализ"; }
+            });
         }
 
-        function openProfile() { document.getElementById('profileModal').style.display = 'flex'; }
-        function handleFileSelect(e) { 
-            const f = e.target.files[0]; 
-            if(f) { 
-                document.getElementById('previewImage').src = URL.createObjectURL(f); 
-                document.getElementById('previewContainer').style.display='block'; 
-            } 
+        async function saveMeal(foodData) {
+            await fetch(`${BASE_URL}/save_meal`, { method: 'POST', headers: { 'Content-Type': 'application/json', "ngrok-skip-browser-warning": "true" }, body: JSON.stringify({ user_id: USER_ID, food: foodData }) });
+            showScreen('main');
         }
-        function changeLanguage() { /* Можно добавить логику переводов, как в прошлой версии */ }
+
+        showScreen('main');
     </script>
 </body>
 </html>
