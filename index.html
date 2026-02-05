@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Calorie Tracker</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --tg-theme-bg-color: #ffffff;
+            --tg-theme-text-color: #000000;
+            --tg-theme-hint-color: #999999;
+            --tg-theme-button-color: #2481cc;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-secondary-bg-color: #efeff3;
+        }
+
+        body {
+            background-color: var(--tg-theme-secondary-bg-color);
+            color: var(--tg-theme-text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-x: hidden;
+        }
+
+        .card {
+            background-color: var(--tg-theme-bg-color);
+            border-radius: 14px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        /* Статистика */
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: var(--tg-theme-secondary-bg-color);
+            border-radius: 6px;
+            height: 8px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: var(--tg-theme-button-color);
+            width: 0%;
+            transition: width 0.4s ease-out;
+        }
+
+        /* Ввод */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 60px;
+            padding: 12px;
+            border: 1px solid transparent;
+            background-color: var(--tg-theme-secondary-bg-color);
+            color: var(--tg-theme-text-color);
+            border-radius: 10px;
+            resize: none;
+            font-size: 16px;
+            box-sizing: border-box;
+            outline: none;
+        }
+        textarea:focus {
+            background-color: var(--tg-theme-bg-color);
+            border-color: var(--tg-theme-button-color);
+        }
+
+        /* Кнопки */
+        .actions-row {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-photo {
+            flex: 0 0 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--tg-theme-secondary-bg-color);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 24px;
+        }
+        #fileInput { display: none; }
+
+        .btn-send {
+            flex: 1;
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-send:disabled { opacity: 0.6; }
+
+        /* Превью */
+        #previewContainer {
+            display: none;
+            position: relative;
+            margin-bottom: 10px;
+        }
+        #previewImage {
+            width: 100%;
+            border-radius: 10px;
+            max-height: 200px;
+            object-fit: cover;
+        }
+        .remove-photo {
+            position: absolute;
+            top: 5px; right: 5px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border-radius: 50%;
+            width: 24px; height: 24px;
+            text-align: center;
+            line-height: 24px;
+            cursor: pointer;
+        }
+
+        /* Список */
+        .food-list { list-style: none; padding: 0; margin: 0; }
+        .food-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--tg-theme-secondary-bg-color);
+        }
+        .food-name { font-weight: 500; font-size: 15px; }
+        .food-calories {
+            font-weight: 600;
+            background: var(--tg-theme-secondary-bg-color);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Статистика -->
+    <div class="card">
+        <div class="stats-header">
+            <span>Калории сегодня</span>
+            <span><span id="currentCals">0</span> / 2000</span>
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+    </div>
+
+    <!-- Ввод -->
+    <div class="card input-group">
+        <div id="previewContainer">
+            <img id="previewImage" src="" alt="Preview">
+            <div class="remove-photo" onclick="clearPhoto()">✕</div>
+        </div>
+
+        <textarea id="foodInput" placeholder="Что съели? (Или фото)"></textarea>
+        
+        <div class="actions-row">
+            <label class="btn-photo">
+                📷
+                <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+            </label>
+            <button class="btn-send" id="analyzeBtn" onclick="processFood()">Добавить</button>
+        </div>
+    </div>
+
+    <!-- История -->
+    <div class="card">
+        <div class="stats-header">История</div>
+        <ul class="food-list" id="foodList">
+            <li class="food-item" id="emptyState" style="color: var(--tg-theme-hint-color); justify-content: center;">
+                Список пуст
+            </li>
+        </ul>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // ------------------------------------------------------------
+        // 👇 ВСТАВЬ СЮДА ССЫЛКУ ИЗ NGROK 👇
+        // Пример: "https://a1b2-c3d4.ngrok-free.app/analyze"
+        // ------------------------------------------------------------
+        const SERVER_URL = "https://deja-embryoid-rosendo.ngrok-free.dev/analyze"; 
+        // ------------------------------------------------------------
+
+        let totalCalories = 0;
+        const DAILY_GOAL = 2000;
+        let selectedFile = null;
+
+        // Обработка выбора фото
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImage').src = e.target.result;
+                    document.getElementById('previewContainer').style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearPhoto() {
+            selectedFile = null;
+            document.getElementById('fileInput').value = "";
+            document.getElementById('previewContainer').style.display = 'none';
+        }
+
+        // ОТПРАВКА НА СЕРВЕР
+        async function processFood() {
+            const textInput = document.getElementById('foodInput').value.trim();
+            const btn = document.getElementById('analyzeBtn');
+
+            if (!textInput && !selectedFile) {
+                tg.showPopup({message: 'Нужен текст или фото!'});
+                return;
+            }
+
+            // Блокируем кнопку
+            btn.disabled = true;
+            btn.innerText = "Думаю...";
+
+            const formData = new FormData();
+            formData.append('text', textInput);
+            if (selectedFile) {
+                formData.append('photo', selectedFile);
+            }
+
+            try {
+                const response = await fetch(SERVER_URL, {
+                    method: 'POST',
+                    headers: {
+                        // Эта строка важна для бесплатного Ngrok
+                        "ngrok-skip-browser-warning": "true"
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Ошибка сети');
+
+                const data = await response.json();
+
+                if (data.calories === 0 && data.name === "Не понятно") {
+                     tg.showPopup({message: 'Не понял, что это за еда 🤔'});
+                } else {
+                    addRecord(data.name, data.calories);
+                    document.getElementById('foodInput').value = '';
+                    clearPhoto();
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+
+            } catch (error) {
+                alert("Ошибка! Проверь, работает ли Python и правильная ли ссылка Ngrok.");
+                console.error(error);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Добавить";
+            }
+        }
+
+        function addRecord(name, cals) {
+            const list = document.getElementById('foodList');
+            const emptyState = document.getElementById('emptyState');
+            if (emptyState) emptyState.remove();
+
+            const li = document.createElement('li');
+            li.className = 'food-item';
+            li.innerHTML = `
+                <div class="food-info">
+                    <span class="food-name">${name}</span>
+                </div>
+                <span class="food-calories">${cals} ккал</span>
+            `;
+            list.prepend(li);
+            totalCalories += cals;
+            
+            // Обновляем прогресс
+            document.getElementById('currentCals').innerText = totalCalories;
+            let percent = (totalCalories / DAILY_GOAL) * 100;
+            if (percent > 100) percent = 100;
+            document.getElementById('progressBar').style.width = percent + '%';
+        }
+    </script>
+</body>
+</html>
