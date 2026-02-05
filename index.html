@@ -56,7 +56,7 @@
 
         /* Модалка Профиля */
         #profileModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
-        .modal-content { background: #1a1a20; padding: 20px; border-radius: 20px; width: 80%; border: 1px solid rgba(255,255,255,0.1); }
+        .modal-content { background: #1a1a20; padding: 20px; border-radius: 20px; width: 85%; border: 1px solid rgba(255,255,255,0.1); max-height: 90vh; overflow-y: auto; }
         .form-group { margin-bottom: 10px; }
         .form-group label { display: block; font-size: 12px; margin-bottom: 5px; color: #aaa; }
         .form-control { width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box;}
@@ -89,17 +89,17 @@
         <!-- БЖУ Бары -->
         <div class="macros-grid">
             <div class="macro-item">
-                <span class="p-color">Protein</span>
+                <span class="p-color">P</span>
                 <span class="macro-val"><span id="currP">0</span>/<span id="targetP">150</span></span>
                 <div class="macro-bar-bg"><div class="macro-bar-fill p-bg" id="barP"></div></div>
             </div>
             <div class="macro-item">
-                <span class="f-color">Fat</span>
+                <span class="f-color">F</span>
                 <span class="macro-val"><span id="currF">0</span>/<span id="targetF">70</span></span>
                 <div class="macro-bar-bg"><div class="macro-bar-fill f-bg" id="barF"></div></div>
             </div>
             <div class="macro-item">
-                <span class="c-color">Carbs</span>
+                <span class="c-color">C</span>
                 <span class="macro-val"><span id="currC">0</span>/<span id="targetC">200</span></span>
                 <div class="macro-bar-bg"><div class="macro-bar-fill c-bg" id="barC"></div></div>
             </div>
@@ -118,36 +118,36 @@
 
     <!-- История -->
     <div class="glass-card">
-        <div style="margin-bottom:10px; font-weight:bold; color:#aaa;">История</div>
+        <div style="margin-bottom:10px; font-weight:bold; color:#aaa;" id="txtHistory">История</div>
         <ul class="food-list" id="foodList"></ul>
     </div>
 
     <!-- МОДАЛКА ПРОФИЛЯ -->
     <div id="profileModal">
         <div class="modal-content">
-            <h3 style="margin-top:0">Мои данные</h3>
-            <div class="form-group"><label>Вес (кг)</label><input type="number" id="pWeight" class="form-control" value="70"></div>
-            <div class="form-group"><label>Рост (см)</label><input type="number" id="pHeight" class="form-control" value="175"></div>
-            <div class="form-group"><label>Возраст</label><input type="number" id="pAge" class="form-control" value="25"></div>
-            <div class="form-group"><label>Пол</label>
-                <select id="pGender" class="form-control"><option value="male">Мужской</option><option value="female">Женский</option></select>
+            <h3 style="margin-top:0" id="lblProfileTitle">Профиль</h3>
+            <div class="form-group"><label id="lblWeight">Вес (кг)</label><input type="number" id="pWeight" class="form-control" value="70"></div>
+            <div class="form-group"><label id="lblHeight">Рост (см)</label><input type="number" id="pHeight" class="form-control" value="175"></div>
+            <div class="form-group"><label id="lblAge">Возраст</label><input type="number" id="pAge" class="form-control" value="25"></div>
+            <div class="form-group"><label id="lblGender">Пол</label>
+                <select id="pGender" class="form-control"><option value="male">Male</option><option value="female">Female</option></select>
             </div>
-            <div class="form-group"><label>Цель</label>
+            <div class="form-group"><label id="lblGoal">Цель</label>
                 <select id="pGoal" class="form-control">
-                    <option value="lose">Похудеть</option>
-                    <option value="maintain" selected>Поддержать</option>
-                    <option value="gain">Набрать</option>
+                    <option value="lose">📉 Lose Weight</option>
+                    <option value="maintain" selected>⚖️ Maintain</option>
+                    <option value="gain">📈 Gain Muscle</option>
                 </select>
             </div>
-            <div class="form-group"><label>Активность</label>
+            <div class="form-group"><label id="lblActivity">Активность</label>
                 <select id="pActivity" class="form-control">
-                    <option value="low">Сидячая</option>
-                    <option value="medium">Средняя</option>
-                    <option value="high">Активная</option>
+                    <option value="low">🛋️ Low</option>
+                    <option value="medium">🚶 Medium</option>
+                    <option value="high">🏃 High</option>
                 </select>
             </div>
-            <button class="btn-save" onclick="saveProfile()">Сохранить и Рассчитать</button>
-            <button onclick="document.getElementById('profileModal').style.display='none'" style="width:100%; background:transparent; border:none; color:#aaa; margin-top:10px;">Закрыть</button>
+            <button class="btn-save" onclick="saveProfile()" id="btnSave">Сохранить</button>
+            <button onclick="document.getElementById('profileModal').style.display='none'" style="width:100%; background:transparent; border:none; color:#aaa; margin-top:10px;" id="btnClose">Закрыть</button>
         </div>
     </div>
 
@@ -159,18 +159,66 @@
         // 👇 ССЫЛКА NGROK
         const BASE_URL = "https://deja-embryoid-rosendo.ngrok-free.dev"; 
 
-        const USER_ID = tg.initDataUnsafe?.user?.id || 1; // 1 для теста
-        let currentLang = 'ru';
-
-        // Данные (Сумма за сегодня)
+        const USER_ID = tg.initDataUnsafe?.user?.id || 1; 
+        
         let stats = { cals: 0, p: 0, f: 0, c: 0 };
         let targets = { cals: 2000, p: 150, f: 70, c: 200 };
 
+        // СЛОВАРЬ ПЕРЕВОДОВ
+        const TRANSLATIONS = {
+            'ru': { 
+                today: 'ккал сегодня', history: 'История', analyze: 'Анализ', 
+                input: 'Что съели?', think: 'Думаю...', error: 'Ошибка',
+                profile: 'Настройки', weight: 'Вес (кг)', height: 'Рост (см)', age: 'Возраст',
+                gender: 'Пол', goal: 'Цель', activity: 'Активность', save: 'Сохранить', close: 'Закрыть'
+            },
+            'uz': { 
+                today: 'kkal bugun', history: 'Tarix', analyze: 'Tahlil', 
+                input: 'Nima yediz?', think: 'O\'ylayapman...', error: 'Xato',
+                profile: 'Sozlamalar', weight: 'Vazn (kg)', height: 'Bo\'yi (sm)', age: 'Yoshi',
+                gender: 'Jinsi', goal: 'Maqsad', activity: 'Faollik', save: 'Saqlash', close: 'Yopish'
+            },
+            'en': { 
+                today: 'kcal today', history: 'History', analyze: 'Analyze', 
+                input: 'What did you eat?', think: 'Thinking...', error: 'Error',
+                profile: 'Profile', weight: 'Weight (kg)', height: 'Height (cm)', age: 'Age',
+                gender: 'Gender', goal: 'Goal', activity: 'Activity', save: 'Save', close: 'Close'
+            }
+        };
+
         // Инициализация
+        let currentLang = localStorage.getItem('app_lang') || 'ru';
+        document.getElementById('langSelect').value = currentLang;
+        changeLanguage(); // Применяем язык сразу
+
         loadProfile();
         loadHistory();
 
-        // 1. Загрузка профиля и целей
+        // ФУНКЦИЯ СМЕНЫ ЯЗЫКА
+        function changeLanguage() {
+            currentLang = document.getElementById('langSelect').value;
+            localStorage.setItem('app_lang', currentLang);
+            
+            const t = TRANSLATIONS[currentLang];
+            
+            // Главный экран
+            document.getElementById('txtKcal').innerText = t.today;
+            document.getElementById('analyzeBtn').innerText = t.analyze;
+            document.getElementById('foodInput').placeholder = t.input;
+            document.getElementById('txtHistory').innerText = t.history;
+            
+            // Модалка
+            document.getElementById('lblProfileTitle').innerText = t.profile;
+            document.getElementById('lblWeight').innerText = t.weight;
+            document.getElementById('lblHeight').innerText = t.height;
+            document.getElementById('lblAge').innerText = t.age;
+            document.getElementById('lblGender').innerText = t.gender;
+            document.getElementById('lblGoal').innerText = t.goal;
+            document.getElementById('lblActivity').innerText = t.activity;
+            document.getElementById('btnSave').innerText = t.save;
+            document.getElementById('btnClose').innerText = t.close;
+        }
+
         async function loadProfile() {
             try {
                 const res = await fetch(`${BASE_URL}/get_profile?user_id=${USER_ID}`, { headers: {"ngrok-skip-browser-warning":"true"} });
@@ -180,7 +228,6 @@
             } catch(e) { console.error(e); }
         }
 
-        // 2. Сохранение профиля
         async function saveProfile() {
             const formData = new FormData();
             formData.append('user_id', USER_ID);
@@ -194,14 +241,13 @@
             try {
                 const res = await fetch(`${BASE_URL}/save_profile`, { method: 'POST', body: formData });
                 const data = await res.json();
-                targets = data.targets; // Обновляем цели
+                targets = data.targets; 
                 document.getElementById('profileModal').style.display = 'none';
                 updateStatsUI();
-                tg.showPopup({message: 'План пересчитан!'});
-            } catch(e) { alert("Ошибка сохранения"); }
+                tg.showPopup({message: 'OK!'});
+            } catch(e) { alert("Error saving profile"); }
         }
 
-        // 3. Загрузка истории
         async function loadHistory() {
             try {
                 const res = await fetch(`${BASE_URL}/get_history?user_id=${USER_ID}`, { headers: {"ngrok-skip-browser-warning":"true"} });
@@ -213,15 +259,12 @@
                 const todayStr = new Date().toISOString().split('T')[0];
 
                 history.forEach(item => {
-                    // Считаем сумму за сегодня
                     if(item.date === todayStr) {
                         stats.cals += item.calories;
                         stats.p += (item.p || 0);
                         stats.f += (item.f || 0);
                         stats.c += (item.c || 0);
                     }
-
-                    // Рисуем список
                     const li = document.createElement('li');
                     li.className = 'food-item';
                     li.innerHTML = `
@@ -237,37 +280,33 @@
             } catch(e) { console.error(e); }
         }
 
-        // 4. UI Обновление
         function updateStatsUI() {
             document.getElementById('currCals').innerText = stats.cals;
             document.getElementById('targetCals').innerText = targets.cals;
-            
             document.getElementById('currP').innerText = stats.p;
             document.getElementById('targetP').innerText = targets.p;
             document.getElementById('barP').style.width = Math.min((stats.p / targets.p)*100, 100) + '%';
-
             document.getElementById('currF').innerText = stats.f;
             document.getElementById('targetF').innerText = targets.f;
             document.getElementById('barF').style.width = Math.min((stats.f / targets.f)*100, 100) + '%';
-
             document.getElementById('currC').innerText = stats.c;
             document.getElementById('targetC').innerText = targets.c;
             document.getElementById('barC').style.width = Math.min((stats.c / targets.c)*100, 100) + '%';
         }
 
-        // 5. Анализ еды
         async function processFood() {
             const textInput = document.getElementById('foodInput').value.trim();
             const btn = document.getElementById('analyzeBtn');
             const file = document.getElementById('fileInput').files[0];
+            const t = TRANSLATIONS[currentLang];
 
             if(!textInput && !file) return;
-            btn.disabled = true; btn.innerText = "...";
+            btn.disabled = true; btn.innerText = t.think;
 
             const formData = new FormData();
             formData.append('text', textInput);
             formData.append('user_id', USER_ID);
-            formData.append('language', document.getElementById('langSelect').value);
+            formData.append('language', currentLang); // Язык для ИИ
             if(file) formData.append('photo', file);
 
             try {
@@ -279,10 +318,10 @@
                     document.getElementById('previewContainer').style.display = 'none';
                     tg.HapticFeedback.notificationOccurred('success');
                 } else {
-                    tg.showPopup({message: 'Не распознано'});
+                    tg.showPopup({message: t.error});
                 }
             } catch(e) { alert("Error"); }
-            finally { btn.disabled = false; btn.innerText = "Анализ"; }
+            finally { btn.disabled = false; btn.innerText = t.analyze; }
         }
 
         function openProfile() { document.getElementById('profileModal').style.display = 'flex'; }
@@ -293,7 +332,6 @@
                 document.getElementById('previewContainer').style.display='block'; 
             } 
         }
-        function changeLanguage() { /* Можно добавить логику переводов, как в прошлой версии */ }
     </script>
 </body>
 </html>
