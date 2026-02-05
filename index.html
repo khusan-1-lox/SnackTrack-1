@@ -3,124 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Nutrition Pro</title>
+    <title>Calorie AI</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg-color: #000; --card-bg: rgba(30, 30, 30, 0.7); --border-color: rgba(255, 255, 255, 0.15); --text-color: #f0f0f0; --accent-blue: #0A84FF; }
-        body { margin: 0; padding: 16px; font-family: -apple-system, sans-serif; background-color: var(--bg-color); color: var(--text-color); }
-        body::before { content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 10% 20%, #0A84FF 0%, transparent 30%), radial-gradient(circle at 90% 80%, #FF2D55 0%, transparent 30%); animation: background-pan 20s linear infinite; }
-        @keyframes background-pan { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-        .view { display: none; }
-        .glass-card { background: var(--card-bg); backdrop-filter: blur(25px); border: 1px solid var(--border-color); border-radius: 24px; padding: 20px; }
-        .btn-main { width: 100%; background: var(--accent-blue); color: white; border: none; border-radius: 16px; height: 55px; font-weight: 600; font-size: 18px; }
+        :root { --tg-theme-bg-color: #fff; --tg-theme-text-color: #000; --tg-theme-button-color: #2481cc; --tg-theme-button-text-color: #fff; --tg-theme-secondary-bg-color: #efeff3; --tg-theme-hint-color: #999; }
+        body { background-color: var(--tg-theme-secondary-bg-color); color: var(--tg-theme-text-color); font-family: -apple-system, sans-serif; margin: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+        
+        /* Верхняя панель с языком */
+        .top-bar { display: flex; justify-content: flex-end; margin-bottom: 5px; }
+        select { background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); border: none; padding: 5px 10px; border-radius: 8px; font-size: 14px; outline: none; }
+
+        .card { background-color: var(--tg-theme-bg-color); border-radius: 14px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .stats-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; }
+        .progress-container { width: 100%; background-color: var(--tg-theme-secondary-bg-color); border-radius: 6px; height: 8px; overflow: hidden; }
+        .progress-bar { height: 100%; background-color: var(--tg-theme-button-color); width: 0%; transition: width 0.4s ease-out; }
+        
+        textarea { width: 100%; min-height: 60px; padding: 12px; border: 1px solid transparent; background-color: var(--tg-theme-secondary-bg-color); color: var(--tg-theme-text-color); border-radius: 10px; resize: none; outline: none; box-sizing: border-box; }
+        
+        .actions-row { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-photo { flex: 0 0 50px; height: 50px; display: flex; align-items: center; justify-content: center; background-color: var(--tg-theme-secondary-bg-color); border-radius: 10px; cursor: pointer; font-size: 24px; }
+        #fileInput { display: none; }
+        .btn-send { flex: 1; background-color: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        
+        #previewContainer { display: none; margin-bottom: 10px; }
+        #previewImage { width: 100%; border-radius: 10px; max-height: 200px; object-fit: cover; }
+        
+        /* История */
+        .food-list { list-style: none; padding: 0; margin: 0; }
+        .food-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--tg-theme-secondary-bg-color); }
+        .food-calories { font-weight: 600; background: var(--tg-theme-secondary-bg-color); padding: 4px 8px; border-radius: 6px; font-size: 13px; }
+        
+        /* Заголовок даты */
+        .date-header {
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: var(--tg-theme-hint-color);
+            font-weight: bold;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
-    <!-- 1. ЭКРАН ПОДПИСКИ -->
-    <div id="subscription-view" class="view" style="text-align:center; padding-top: 30vh;">
-        <h1>PRO Доступ</h1>
-        <p style="color:#888;">Рассчитайте свой личный план питания и получите доступ к ИИ-анализу.</p>
-        <button class="btn-main" onclick="subscribe()">Подписаться (Тест)</button>
+
+    <!-- Выбор языка -->
+    <div class="top-bar">
+        <select id="langSelect" onchange="changeLanguage()">
+            <option value="ru">🇷🇺 Русский</option>
+            <option value="uz">🇺🇿 O'zbekcha</option>
+            <option value="en">🇺🇸 English</option>
+        </select>
     </div>
 
-    <!-- 2. ЭКРАН ПРОФИЛЯ -->
-    <div id="profile-view" class="view">
-        <h2 style="margin-top:0">Расскажи о себе</h2>
-        <!-- (Сюда можно вставить HTML-форму профиля из предыдущих версий) -->
-        <button class="btn-main" onclick="saveProfile()">Рассчитать и начать</button>
+    <div class="card">
+        <div class="stats-header">
+            <span id="txtToday">Сегодня</span>
+            <span><span id="currentCals">0</span> / 2000</span>
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
     </div>
 
-    <!-- 3. ГЛАВНОЕ ПРИЛОЖЕНИЕ -->
-    <div id="main-app-view" class="view" style="display:flex; flex-direction:column; gap:16px;">
-        <div class="glass-card">
-            <!-- Статистика КБЖУ -->
+    <div class="card">
+        <div id="previewContainer"><img id="previewImage" src=""></div>
+        <textarea id="foodInput" placeholder="Что съели?"></textarea>
+        <div class="actions-row">
+            <label class="btn-photo">📷<input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)"></label>
+            <button class="btn-send" id="analyzeBtn" onclick="processFood()">Добавить</button>
         </div>
-        <div class="glass-card">
-            <textarea id="foodInput" rows="2" placeholder="Съел 2 яйца и тост..."></textarea>
-            <button class="btn-main" style="margin-top:15px;" onclick="analyzeFood()">Добавить</button>
-        </div>
-        <div class="glass-card">
-            <div style="font-weight:600; color:#888; margin-bottom:10px;">Дневной рацион</div>
-            <ul id="foodList" style="list-style:none; padding:0; margin:0;"></ul>
-            <button onclick="analyzeDay()" style="width:100%; background:transparent; border:1px solid #555; color:#fff; padding:10px; border-radius:10px; margin-top:15px;">✨ Проанализировать день</button>
-        </div>
-        <div class="glass-card">
-            <div style="font-weight:600; color:#888; margin-bottom:10px;">История за неделю</div>
-            <div id="weekly-summary" style="font-size:14px; line-height:1.6; white-space:pre;"></div>
-        </div>
+    </div>
+
+    <div class="card">
+        <div class="stats-header" id="txtHistory">История</div>
+        <ul class="food-list" id="foodList">
+            <li style="text-align:center; color:grey; padding:10px" id="txtEmpty">Загрузка...</li>
+        </ul>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.setHeaderColor('#000');
 
-        const BASE_URL = "https://deja-embryoid-rosendo.ngrok-free.dev;
-        const USER_ID = tg.initDataUnsafe?.user?.id || 1;
+        // 👇 ВСТАВЬ СЮДА ССЫЛКУ NGROK 👇
+        const BASE_URL = "https://deja-embryoid-rosendo.ngrok-free.dev"; 
 
-        // ----- ГЛАВНАЯ ЛОГИКА -----
-        async function init() {
-            const res = await fetch(`${BASE_URL}/check_status?user_id=${USER_ID}`, { headers: {"ngrok-skip-browser-warning":"true"} });
-            const data = await res.json();
-            if (!data.is_pro) {
-                showView('subscription-view');
-            } else if (!data.has_profile) {
-                showView('profile-view');
-            } else {
-                showView('main-app-view');
-                loadAllData();
+        const USER_ID = tg.initDataUnsafe?.user?.id || 0;
+        let currentLang = localStorage.getItem('app_lang') || 'ru'; // Запоминаем язык
+        document.getElementById('langSelect').value = currentLang;
+
+        // Переводы
+        const TRANSLATIONS = {
+            'ru': { today: 'Сегодня', history: 'История', add: 'Добавить', think: 'Думаю...', input: 'Что съели?', empty: 'Пока пусто', error: 'Не понял' },
+            'uz': { today: 'Bugun', history: 'Tarix', add: "Qo'shish", think: 'O\'ylayapman...', input: 'Nima yediz?', empty: 'Hozircha bo\'sh', error: 'Tushunmadim' },
+            'en': { today: 'Today', history: 'History', add: 'Add', think: 'Thinking...', input: 'What did you eat?', empty: 'Empty', error: 'Did not understand' }
+        };
+
+        // Обновление текстов на экране
+        function updateUITexts() {
+            const t = TRANSLATIONS[currentLang];
+            document.getElementById('txtToday').innerText = t.today;
+            document.getElementById('txtHistory').innerText = t.history;
+            document.getElementById('analyzeBtn').innerText = t.add;
+            document.getElementById('foodInput').placeholder = t.input;
+            if(document.getElementById('txtEmpty')) document.getElementById('txtEmpty').innerText = t.empty;
+        }
+
+        function changeLanguage() {
+            currentLang = document.getElementById('langSelect').value;
+            localStorage.setItem('app_lang', currentLang);
+            updateUITexts();
+        }
+
+        let todayCalories = 0;
+        const DAILY_GOAL = 2000;
+        let selectedFile = null;
+
+        // ЗАГРУЗКА ИСТОРИИ (ПО ДНЯМ)
+        async function loadHistory() {
+            try {
+                const res = await fetch(`${BASE_URL}/get_history?user_id=${USER_ID}`, {
+                    headers: { "ngrok-skip-browser-warning": "true" }
+                });
+                const history = await res.json();
+                
+                const list = document.getElementById('foodList');
+                list.innerHTML = '';
+                todayCalories = 0;
+
+                if (history.length === 0) {
+                    list.innerHTML = `<li id="txtEmpty" style="text-align:center; color:grey; padding:10px">${TRANSLATIONS[currentLang].empty}</li>`;
+                    return;
+                }
+
+                // Логика группировки по датам
+                let lastDate = null;
+                const todayStr = new Date().toISOString().split('T')[0]; // "2025-02-05"
+
+                history.forEach(item => {
+                    // Если это еда за СЕГОДНЯ, плюсуем в прогресс
+                    if (item.date === todayStr) {
+                        todayCalories += item.calories;
+                    }
+
+                    // Если дата изменилась, рисуем заголовок
+                    if (item.date !== lastDate) {
+                        const dateHeader = document.createElement('div');
+                        dateHeader.className = 'date-header';
+                        // Пишем "Сегодня" или саму дату
+                        dateHeader.innerText = (item.date === todayStr) ? TRANSLATIONS[currentLang].today : item.date;
+                        list.appendChild(dateHeader);
+                        lastDate = item.date;
+                    }
+
+                    // Рисуем еду
+                    const li = document.createElement('li');
+                    li.className = 'food-item';
+                    li.innerHTML = `<span class="food-name">${item.name}</span><span class="food-calories">${item.calories}</span>`;
+                    list.appendChild(li);
+                });
+
+                updateStats();
+            } catch (e) {
+                console.error(e);
             }
         }
-        
-        function showView(viewId) {
-            document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-            document.getElementById(viewId).style.display = 'block';
+
+        // ОБРАБОТКА ВВОДА
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('previewImage').src = e.target.result;
+                    document.getElementById('previewContainer').style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
         }
 
-        async function subscribe() {
+        async function processFood() {
+            const textInput = document.getElementById('foodInput').value.trim();
+            const btn = document.getElementById('analyzeBtn');
+            const t = TRANSLATIONS[currentLang];
+
+            if (!textInput && !selectedFile) return;
+
+            btn.disabled = true;
+            btn.innerText = t.think;
+
             const formData = new FormData();
+            formData.append('text', textInput);
             formData.append('user_id', USER_ID);
-            await fetch(`${BASE_URL}/subscribe`, { method: 'POST', body: formData });
-            init(); // Перепроверяем статус
-        }
+            formData.append('language', currentLang); // 👇 Отправляем язык на сервер
+            if (selectedFile) formData.append('photo', selectedFile);
 
-        async function saveProfile() {
-            // ... (здесь логика сбора данных из формы профиля)
-            const formData = new FormData();
-            // ...
-            await fetch(`${BASE_URL}/save_profile`, { method: 'POST', body: formData });
-            init(); // Перепроверяем статус
-        }
-        
-        async function analyzeFood() {
-            const text = document.getElementById('foodInput').value;
-            if (!text) return;
-            // 1. Анализируем через ИИ
-            const res = await fetch(`${BASE_URL}/analyze`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({text})});
-            const foodData = await res.json();
-            if (foodData.calories > 0) {
-                // 2. Сохраняем еду
-                await fetch(`${BASE_URL}/save_meal`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({user_id: USER_ID, food: foodData})});
-                loadAllData(); // Обновляем всё
+            try {
+                const response = await fetch(`${BASE_URL}/analyze`, {
+                    method: 'POST',
+                    headers: { "ngrok-skip-browser-warning": "true" },
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.calories > 0) {
+                    // Перезагружаем всю историю, чтобы новая запись встала красиво в дату
+                    loadHistory();
+                    
+                    document.getElementById('foodInput').value = '';
+                    selectedFile = null;
+                    document.getElementById('previewContainer').style.display = 'none';
+                    tg.HapticFeedback.notificationOccurred('success');
+                } else {
+                    tg.showPopup({message: t.error});
+                }
+            } catch (error) {
+                alert("Server Error");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = t.add;
             }
         }
 
-        async function analyzeDay() {
-            const res = await fetch(`${BASE_URL}/analyze_day?user_id=${USER_ID}`);
-            const data = await res.json();
-            tg.showAlert(data.analysis);
+        function updateStats() {
+            document.getElementById('currentCals').innerText = todayCalories;
+            let percent = (todayCalories / DAILY_GOAL) * 100;
+            if (percent > 100) percent = 100;
+            document.getElementById('progressBar').style.width = percent + '%';
         }
 
-        async function loadAllData() {
-            const res = await fetch(`${BASE_URL}/get_data?user_id=${USER_ID}`);
-            const data = await res.json();
-            
-            // ... (здесь код для отрисовки статистики и истории)
-            // ...
-        }
+        // Старт
+        updateUITexts();
+        loadHistory();
 
-        // Запуск!
-        init();
     </script>
 </body>
 </html>
